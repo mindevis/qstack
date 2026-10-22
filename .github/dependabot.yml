@@ -1,0 +1,26 @@
+version: 2
+updates:
+  # Keeps SHA-pinned actions current (updates the SHA and the version comment).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+
+  # Pinned developer tools.
+  - package-ecosystem: gomod
+    directories:
+      - /tools
+      - /tools/protoc
+    schedule:
+      interval: monthly
+    groups:
+      tools:
+        patterns: ["*"]
