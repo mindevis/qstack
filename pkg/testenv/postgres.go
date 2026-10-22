@@ -1,9 +1,10 @@
 // Package testenv provides real infrastructure for integration tests
 // (build tag `integration`, spec 14 §1).
 //
-// PostgreSQL comes from QS_TEST_PG_DSN when set (the DevSpace dev pod points
-// it at a server in the dev namespace); otherwise a PostgreSQL 17 container is
-// started once per test binary with testcontainers (CI, machines with Docker).
+// PostgreSQL and NATS come from QS_TEST_PG_DSN and QS_TEST_NATS_URL when set
+// (the DevSpace dev pod points them at servers in the dev namespace);
+// otherwise containers are started once per test binary with testcontainers
+// (CI, machines with Docker).
 package testenv
 
 import (
