@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package qstack.api;
+
+// ErrorReason is the machine-readable cause of an API error. The value name is
+// sent verbatim as google.rpc.ErrorInfo.reason (domain "qstack.cloud"), so
+// values intentionally use the `QS_` prefix instead of the enum name.
+//
+// Values are append-only: never renumber or remove a reason.
+enum ErrorReason {
+  ERROR_REASON_UNSPECIFIED = 0;
+
+  // INVALID_ARGUMENT: a request field failed validation (with google.rpc.BadRequest).
+  QS_INVALID_FIELD = 1;
+  // INVALID_ARGUMENT: the idempotency key was reused with a different request body.
+  QS_IDEMPOTENCY_KEY_REUSED = 2;
+  // NOT_FOUND: the resource does not exist or the caller may not see it.
+  QS_NOT_FOUND = 3;
+  // PERMISSION_DENIED: the caller may see the resource but not perform the action.
+  QS_PERMISSION_DENIED = 4;
+  // UNAUTHENTICATED: no credentials were presented.
+  QS_UNAUTHENTICATED = 5;
+  // UNAUTHENTICATED: the presented token has expired or was revoked.
+  QS_TOKEN_EXPIRED = 6;
+  // ALREADY_EXISTS: a live resource with the same name exists in the project.
+  QS_NAME_CONFLICT = 7;
+  // FAILED_PRECONDITION: another mutating operation is running on the resource.
+  QS_RESOURCE_BUSY = 8;
+  // FAILED_PRECONDITION: the resource state does not allow the action.
+  QS_INVALID_STATE = 9;
+  // FAILED_PRECONDITION: the resource is used by other resources.
+  QS_RESOURCE_IN_USE = 10;
+  // RESOURCE_EXHAUSTED: a project quota would be exceeded (with google.rpc.QuotaFailure).
+  QS_QUOTA_EXCEEDED = 11;
+  // RESOURCE_EXHAUSTED: the zone has no capacity for the request.
+  QS_ZONE_CAPACITY = 12;
+  // RESOURCE_EXHAUSTED: the caller exceeded the API rate limit (with Retry-After).
+  QS_RATE_LIMITED = 13;
+  // ABORTED: the supplied etag does not match the current resource version.
+  QS_ETAG_MISMATCH = 14;
+  // FAILED_PRECONDITION: a local disk can only attach to instances on its node.
+  QS_LOCAL_DISK_NODE_MISMATCH = 15;
+  // FAILED_PRECONDITION: the service is not available in this installation
+  // (e.g. Object Storage without a Ceph backend).
+  QS_SERVICE_NOT_AVAILABLE = 16;
+  // FAILED_PRECONDITION: billing country/currency is locked after the first invoice.
+  QS_BILLING_CURRENCY_LOCKED = 17;
+}

@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+// Long-running operations (LRO) returned by every mutating public method.
+package qstack.operation.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "qstack/api/annotations.proto";
+
+// Operation tracks a mutating request until the target resource reaches its
+// final state. Mutating methods return it within 500 ms even if the work
+// completed synchronously (then `done` is already true).
+message Operation {
+  // Operation ID, `op-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Human-readable summary, e.g. "Create instance".
+  string description = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Subject ID (user or service account) that started the operation.
+  string created_by = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp modify_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // True once the operation has finished, successfully or not.
+  bool done = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Service-specific metadata; always contains the target resource ID,
+  // e.g. qstack.compute.v1.CreateInstanceMetadata.
+  google.protobuf.Any metadata = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Set only when `done` is true.
+  oneof result {
+    // The operation failed.
+    google.rpc.Status error = 8;
+    // The operation succeeded; holds the resource in its final state.
+    google.protobuf.Any response = 9;
+  }
+
+  // ID of the resource the operation acts on.
+  string resource_id = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Project that owns the resource.
+  string project_id = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// OperationService reads and cancels operations of any service in the region.
+service OperationService {
+  // Returns an operation by ID.
+  rpc GetOperation(GetOperationRequest) returns (Operation) {
+    option (google.api.http) = {get: "/operations/v1/operations/{operation_id}"};
+    option (qstack.api.permission) = "operations.operations.get";
+  }
+
+  // Lists operations of a project or of a single resource, newest first.
+  rpc ListOperations(ListOperationsRequest) returns (ListOperationsResponse) {
+    option (google.api.http) = {get: "/operations/v1/operations"};
+    option (qstack.api.permission) = "operations.operations.list";
+  }
+
+  // Requests cancellation. Not every operation can be cancelled; the returned
+  // operation reflects the state after the request.
+  rpc CancelOperation(CancelOperationRequest) returns (Operation) {
+    option (google.api.http) = {
+      post: "/operations/v1/operations/{operation_id}:cancel"
+      body: "*"
+    };
+    option (qstack.api.permission) = "operations.operations.cancel";
+  }
+}
+
+message GetOperationRequest {
+  string operation_id = 1 [(buf.validate.field).string.pattern = "^op-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListOperationsRequest {
+  // Exactly one scope is required.
+  oneof scope {
+    option (buf.validate.oneof).required = true;
+    string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+    string resource_id = 2 [(buf.validate.field).string.pattern = "^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{26}$"];
+  }
+  // Default 100, maximum 1000.
+  int32 page_size = 3 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  // Opaque token from a previous response.
+  string page_token = 4 [(buf.validate.field).string.max_len = 2048];
+  // Filter expression, e.g. `done = false`.
+  string filter = 5 [(buf.validate.field).string.max_len = 1024];
+}
+
+message ListOperationsResponse {
+  repeated Operation operations = 1;
+  // Empty when there are no more results.
+  string next_page_token = 2;
+}
+
+message CancelOperationRequest {
+  string operation_id = 1 [(buf.validate.field).string.pattern = "^op-[0-9a-hjkmnp-tv-z]{26}$"];
+}

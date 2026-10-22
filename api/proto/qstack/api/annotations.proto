@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+// Custom options shared by every qStack API.
+package qstack.api;
+
+import "google/protobuf/descriptor.proto";
+
+// Extension numbers 51000-51999 are reserved for qStack options.
+
+extend google.protobuf.MethodOptions {
+  // IAM permission required to call the method, in the form
+  // `<service>.<resource>.<verb>`, e.g. `compute.instances.create`.
+  // Every public RPC must declare exactly one; pkg/protoopts checks this.
+  string permission = 51001;
+}
+
+extend google.protobuf.FieldOptions {
+  // The field holds a secret or personal data (passwords, keys, tokens,
+  // user-data). Such values are masked in logs, audit events and errors.
+  bool sensitive = 51101;
+}
