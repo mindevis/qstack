@@ -72,6 +72,10 @@ test: ## Unit tests (race detector)
 test-integration: ## Integration tests (build tag `integration`; PostgreSQL/NATS from env or testcontainers)
 	$(GO) test -race -count=1 -tags=integration ./...
 
+.PHONY: licenses
+licenses: ## Fail on dependency licenses incompatible with Apache-2.0 (GPL/AGPL/unknown)
+	$(TOOL) go-licenses check ./... --disallowed_types=forbidden,restricted,unknown
+
 .PHONY: tidy-check
 tidy-check: ## Fail if go.mod/go.sum are not tidy (does not modify files)
 	@tmp=$$(mktemp -d); trap 'rm -rf "$$tmp"' EXIT; \
@@ -103,7 +107,7 @@ gen-check: ## Fail if `make gen` changes generated code (works without .git)
 	echo "gen-check: ok"
 
 .PHONY: verify
-verify: tidy-check gen-check vet lint test test-integration ## Everything CI runs
+verify: tidy-check gen-check vet lint licenses test test-integration ## Everything CI runs
 	@echo "verify: ok"
 
 ##@ Environments (implemented in T-0.12)

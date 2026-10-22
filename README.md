@@ -25,6 +25,7 @@ devspace run verify    # make verify внутри пода
 | `make lint` | golangci-lint |
 | `make test` | unit-тесты (`-race`) |
 | `make test-integration` | интеграционные тесты (тег `integration`) |
+| `make licenses` | проверка лицензий зависимостей (совместимость с Apache-2.0) |
 | `make verify` | всё, что проверяет CI |
 
 Версии инструментов закреплены в `tools/go.mod` и `tools/protoc/go.mod` и запускаются через `go tool`, глобально ничего ставить не нужно.
