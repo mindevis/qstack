@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/database"
 )
 
 // migrationName is NNNN_snake_case.sql, e.g. 0001_create_instances.sql.
@@ -82,16 +83,33 @@ func checkForwardOnly(fsys fs.FS, name string) error {
 	return nil
 }
 
+// DefaultVersionTable is goose's own version table, used by Migrate for a
+// service's schema.
+const DefaultVersionTable = "goose_db_version"
+
 // Migrate validates and applies all pending migrations from fsys and returns
 // the names applied in this run.
 func Migrate(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS) ([]string, error) {
+	return MigrateTable(ctx, pool, fsys, DefaultVersionTable)
+}
+
+// MigrateTable is Migrate with a separate version table. Shared libraries
+// that ship tables into every service database (pkg/operation, pkg/outbox)
+// number their migrations independently of the service and track them in
+// their own table, e.g. "qs_operation_db_version".
+func MigrateTable(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS, versionTable string) ([]string, error) {
 	if err := ValidateMigrations(fsys); err != nil {
 		return nil, err
+	}
+	store, err := database.NewStore(database.DialectPostgres, versionTable)
+	if err != nil {
+		return nil, fmt.Errorf("db: migrations: %w", err)
 	}
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	defer func() { _ = sqlDB.Close() }()
 
-	p, err := goose.NewProvider(goose.DialectPostgres, sqlDB, fsys)
+	// With a custom store the dialect argument must be empty.
+	p, err := goose.NewProvider("", sqlDB, fsys, goose.WithStore(store))
 	if err != nil {
 		return nil, fmt.Errorf("db: migrations: %w", err)
 	}
