@@ -1,6 +1,11 @@
 version: v2
 managed:
   enabled: true
+  disable:
+    # Vendored dependencies keep their upstream Go packages
+    # (paths are relative to the module root, third_party/proto).
+    - path: google
+    - path: buf
   override:
     - file_option: go_package_prefix
       value: github.com/mindevis/qstack/gen/go

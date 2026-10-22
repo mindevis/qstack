@@ -34,13 +34,15 @@ proto: ## buf lint + breaking (vs main) + generate
 ifeq ($(strip $(PROTO_FILES)),)
 	@echo "proto: no .proto files under $(PROTO_DIR), skipping"
 else
+	$(BUF) format -d --exit-code $(PROTO_DIR)
 	$(BUF) lint
 	@if [ -d .git ] && git cat-file -e main:$(PROTO_DIR) 2>/dev/null; then \
 		$(BUF) breaking --against '.git#branch=main'; \
 	else \
 		echo "proto: breaking check skipped (no .git or no protos on main; CI runs it)"; \
 	fi
-	$(BUF) generate
+	@# Only our own protos; vendored third_party/proto keeps its upstream Go packages.
+	$(BUF) generate --path $(PROTO_DIR)/qstack
 endif
 
 .PHONY: sqlc

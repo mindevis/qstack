@@ -1,9 +1,27 @@
 version: v2
 modules:
   - path: api/proto
+  # Vendored googleapis/protovalidate definitions (see third_party/README.md).
+  - path: third_party/proto
 lint:
   use:
     - STANDARD
+  except:
+    # AIP style: Get/Create/Update/Delete return the resource or an Operation,
+    # not a dedicated <Method>Response message.
+    - RPC_RESPONSE_STANDARD_NAME
+    - RPC_REQUEST_RESPONSE_UNIQUE
+  ignore:
+    - third_party/proto
+  ignore_only:
+    # Shared options are unversioned, like google.api.
+    PACKAGE_VERSION_SUFFIX:
+      - api/proto/qstack/api
+    # Reason value names are sent verbatim as ErrorInfo.reason (QS_*).
+    ENUM_VALUE_PREFIX:
+      - api/proto/qstack/api/error_reason.proto
 breaking:
   use:
     - FILE
+  ignore:
+    - third_party/proto
