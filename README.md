@@ -32,3 +32,7 @@ devspace run verify    # make verify внутри пода
 ## Статус
 
 Фаза 0 — фундамент монорепо.
+
+## Лицензия
+
+[Apache License 2.0](LICENSE).
