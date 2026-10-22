@@ -9,6 +9,7 @@ import (
 	"os"
 	"slices"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -205,5 +206,25 @@ func TestOpenFailures(t *testing.T) {
 	}
 	if _, err := Open(ctx, Config{DSN: "postgres://u:secret@127.0.0.1:1/x?sslmode=disable", ConnectTimeout: time.Second}); err == nil {
 		t.Error("unreachable server: want error")
+	}
+}
+
+// A library's migrations are numbered and tracked independently of the
+// service's own (MigrateTable).
+func TestMigrateTableKeepsSeparateVersions(t *testing.T) {
+	ctx := context.Background()
+	pool := openMigrated(t) // service schema at version 2
+
+	lib := fstest.MapFS{"0001_create_gadgets.sql": {Data: []byte("-- +goose Up\nCREATE TABLE gadgets (id text PRIMARY KEY);\n")}}
+	applied, err := MigrateTable(ctx, pool, lib, "qs_lib_db_version")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(applied, []string{"0001_create_gadgets.sql"}) {
+		t.Errorf("library run applied %v, want its own 0001", applied)
+	}
+	again, err := Migrate(ctx, pool, testMigrations(t))
+	if err != nil || len(again) != 0 {
+		t.Errorf("service run after library applied %v (err %v), want nothing", again, err)
 	}
 }
