@@ -1,0 +1,7 @@
+# Единые окончания строк (LF) — код собирается и работает на Debian 13
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

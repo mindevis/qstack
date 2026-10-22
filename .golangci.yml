@@ -1,0 +1,50 @@
+version: "2"
+
+run:
+  timeout: 5m
+  build-tags:
+    - integration
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - forbidigo
+    - gosec
+    - misspell
+    - revive
+    - unconvert
+    - unparam
+  settings:
+    forbidigo:
+      forbid:
+        # Business logic must use pkg/clock so tests can scale time (QS_TIME_SCALE).
+        - pattern: ^time\.Now$
+          msg: use pkg/clock instead of time.Now
+        - pattern: ^time\.Since$
+          msg: use pkg/clock instead of time.Since
+  exclusions:
+    generated: strict
+    paths:
+      - gen/
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+          - unparam
+      - path: pkg/clock/
+        linters:
+          - forbidigo
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/mindevis/qstack
+  exclusions:
+    paths:
+      - gen/

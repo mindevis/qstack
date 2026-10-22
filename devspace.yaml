@@ -1,0 +1,87 @@
+# Development loop: edit code on the workstation (Windows is fine), build and
+# test on Linux inside a pod in the k3s dev namespace.
+#
+#   devspace dev            # deploy the dev pod, start two-way sync, open a shell
+#   devspace run verify     # run `make verify` in the pod
+#
+# The kubeconfig context must point at the dev namespace (qstack-dev); the
+# ServiceAccount used there has admin rights in that namespace only.
+#
+# Git Bash on Windows rewrites POSIX paths in CLI arguments (e.g. ./:/workspace).
+# When passing such paths to devspace/kubectl directly, set MSYS_NO_PATHCONV=1.
+version: v2beta1
+name: qstack
+
+vars:
+  DEV_IMAGE: golang:1.26-trixie
+  DEV_COMPONENT: qstack-dev
+
+deployments:
+  qstack-dev:
+    helm:
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: 0.9.1
+      values:
+        containers:
+          - name: dev
+            image: ${DEV_IMAGE}
+            command: ["sleep"]
+            args: ["infinity"]
+            env:
+              - name: GOTOOLCHAIN
+                value: go1.26.10
+              # .git is not synced into the pod, so VCS stamping must be off.
+              - name: GOFLAGS
+                value: -buildvcs=false
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                memory: 3Gi
+            volumeMounts:
+              - containerPath: /go/pkg/mod
+                volume:
+                  name: go-cache
+                  subPath: mod
+              - containerPath: /root/.cache
+                volume:
+                  name: go-cache
+                  subPath: cache
+        volumes:
+          - name: go-cache
+            size: 10Gi
+
+dev:
+  qstack-dev:
+    labelSelector:
+      app.kubernetes.io/component: ${DEV_COMPONENT}
+    container: dev
+    workingDir: /workspace
+    sync:
+      - path: ./:/workspace
+        excludePaths:
+          # SDD docs and agent instructions stay on the workstation only.
+          - .git/
+          - docs/
+          - CLAUDE.md
+          - AGENTS.md
+          - CLAUDE.local.md
+          - .claude/
+          - bin/
+          - dist/
+          - node_modules/
+    terminal:
+      command: bash
+
+commands:
+  verify:
+    command: devspace enter -c dev --label-selector app.kubernetes.io/component=${DEV_COMPONENT} --workdir /workspace -- make verify
+  test:
+    command: devspace enter -c dev --label-selector app.kubernetes.io/component=${DEV_COMPONENT} --workdir /workspace -- make test
+  lint:
+    command: devspace enter -c dev --label-selector app.kubernetes.io/component=${DEV_COMPONENT} --workdir /workspace -- make lint
+  gen:
+    command: devspace enter -c dev --label-selector app.kubernetes.io/component=${DEV_COMPONENT} --workdir /workspace -- make gen

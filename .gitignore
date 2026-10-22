@@ -1,0 +1,54 @@
+# --- Документация SDD и инструкции для ИИ-агентов: хранятся только локально ---
+/docs/
+/CLAUDE.md
+/AGENTS.md
+CLAUDE.local.md
+.claude/
+
+# --- DevSpace (local state) ---
+.devspace/
+
+# --- Go ---
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+coverage.*
+go.work
+go.work.sum
+
+# --- Node / консоль ---
+node_modules/
+/console/dist/
+.vite/
+
+# --- OpenTofu / Terraform ---
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.example.tfvars
+
+# --- Секреты и локальные окружения ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cred
+kubeconfig*
+
+# --- Сборка пакетов и образов ---
+*.deb
+*.qcow2
+*.iso
+
+# --- IDE / ОС ---
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
