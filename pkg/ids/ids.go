@@ -53,6 +53,8 @@ const (
 	NetworkLoadBalancer     Kind = "nlb"
 	ApplicationLoadBalancer Kind = "alb"
 	Invoice                 Kind = "inv"
+	// Event IDs identify CloudEvents (spec 02 §8), not resources.
+	Event Kind = "evt"
 )
 
 // kindNames maps a kind to the resource type name used in error messages.
@@ -85,6 +87,7 @@ var kindNames = map[Kind]string{
 	NetworkLoadBalancer:     "network load balancer",
 	ApplicationLoadBalancer: "application load balancer",
 	Invoice:                 "invoice",
+	Event:                   "event",
 }
 
 // Prefix returns the ID prefix, e.g. "ins".

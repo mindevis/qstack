@@ -41,6 +41,8 @@ deployments:
               # Integration tests use this server instead of testcontainers.
               - name: QS_TEST_PG_DSN
                 value: postgres://postgres:${DEV_PG_PASSWORD}@qstack-dev-postgres:5432/postgres?sslmode=disable
+              - name: QS_TEST_NATS_URL
+                value: nats://qstack-dev-nats:4222
             resources:
               requests:
                 cpu: 500m
@@ -92,6 +94,36 @@ deployments:
         service:
           ports:
             - port: 5432
+
+  # NATS with JetStream for integration tests (tests use unique stream names).
+  # Throwaway data: JetStream storage lives in an emptyDir.
+  qstack-dev-nats:
+    helm:
+      chart:
+        name: component-chart
+        repo: https://charts.devspace.sh
+        version: 0.9.1
+      values:
+        containers:
+          - name: nats
+            image: nats:2.15.1
+            args: ["-js", "-sd", "/data"]
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                memory: 512Mi
+            volumeMounts:
+              - containerPath: /data
+                volume:
+                  name: nats-data
+        volumes:
+          - name: nats-data
+            emptyDir: {}
+        service:
+          ports:
+            - port: 4222
 
 dev:
   qstack-dev:
