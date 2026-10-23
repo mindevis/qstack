@@ -9,11 +9,17 @@ managed:
   override:
     - file_option: go_package_prefix
       value: github.com/mindevis/qstack/gen/go
+    # Go forbids importing packages under an "internal" directory from
+    # outside its parent, so qstack.<svc>.internal.v1 is generated into
+    # <svc>/internalv1 instead (one entry per internal API).
+    - file_option: go_package
+      path: qstack/iam/internal/v1
+      value: github.com/mindevis/qstack/gen/go/qstack/iam/internalv1;iaminternalv1
 plugins:
   # Generators are pinned in tools/protoc/go.mod (stable protobuf releases only).
   - local: ["go", "tool", "-modfile=tools/protoc/go.mod", "protoc-gen-go"]
     out: gen/go
-    opt: paths=source_relative
+    opt: module=github.com/mindevis/qstack/gen/go
   - local: ["go", "tool", "-modfile=tools/protoc/go.mod", "protoc-gen-go-grpc"]
     out: gen/go
-    opt: paths=source_relative
+    opt: module=github.com/mindevis/qstack/gen/go
