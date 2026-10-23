@@ -55,6 +55,8 @@ type Authorizer interface {
 type Subject struct {
 	ID   string // usr-… or sa-…
 	Type string // "user" or "sa"
+	// AuthMethod is how the subject authenticated: "token", "api_key", …
+	AuthMethod string
 }
 
 type subjectKey struct{}
@@ -124,6 +126,37 @@ func (c *call) authorize(ctx context.Context, permission string, path Path) (boo
 	return ok, nil
 }
 
+// Target records the path of the method's checks for observers outside
+// the interceptor chain (pkg/audit), which cannot see the request's
+// authorization state.
+type Target struct {
+	mu   sync.Mutex
+	path Path
+}
+
+type targetKey struct{}
+
+// WithTarget returns ctx in which Check and CheckResource record their path.
+func WithTarget(ctx context.Context) (context.Context, *Target) {
+	t := &Target{}
+	return context.WithValue(ctx, targetKey{}, t), t
+}
+
+// Path returns the last path checked for the method's permission.
+func (t *Target) Path() Path {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.path
+}
+
+func recordTarget(ctx context.Context, path Path) {
+	if t, ok := ctx.Value(targetKey{}).(*Target); ok {
+		t.mu.Lock()
+		t.path = append(Path(nil), path...)
+		t.mu.Unlock()
+	}
+}
+
 // Check authorizes the method's permission on path: the project for Create
 // and List, the resource for custom methods on it. Denial is
 // PERMISSION_DENIED.
@@ -132,6 +165,7 @@ func Check(ctx context.Context, path Path) error {
 	if err != nil {
 		return err
 	}
+	recordTarget(ctx, path)
 	ok, err := c.authorize(ctx, c.permission, path)
 	if err != nil {
 		c.record(false)

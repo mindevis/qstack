@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+// Audit trail events (spec 11 §3, REQ-OBS-010). Written by pkg/audit through
+// the outbox to qs.<region>.audit.<service> and stored by qs-audit.
+package qstack.audit.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+import "google/rpc/code.proto";
+
+// AuditEvent records one mutating API call, successful or not, or a sign-in.
+message AuditEvent {
+  // Event ID, `evt-<ulid>`; also the CloudEvents id (consumers deduplicate by it).
+  string id = 1;
+  google.protobuf.Timestamp time = 2;
+
+  // Caller: subject ID (usr-/sa-), its type ("user", "sa") and how it
+  // authenticated ("token", "api_key", "password", "federation", ...).
+  string subject_id = 3;
+  string subject_type = 4;
+  string auth_method = 5;
+  string source_ip = 6;
+  string user_agent = 7;
+
+  // Service and full gRPC method, e.g. "compute" and
+  // "/qstack.compute.v1.InstanceService/CreateInstance".
+  string service = 8;
+  string method = 9;
+
+  // Resources the call targeted (below the project), and their project
+  // and organization.
+  repeated string resource_ids = 10;
+  string project_id = 11;
+  string organization_id = 12;
+
+  // The request with every (qstack.api.sensitive) field removed.
+  google.protobuf.Struct request = 13;
+
+  // Outcome: gRPC code and, for errors, the QS_* reason.
+  google.rpc.Code status_code = 14;
+  string status_reason = 15;
+  // Operation started by the call, if any.
+  string operation_id = 16;
+}
