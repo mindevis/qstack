@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+// Internal IAM authorization API (spec 03 §4). Called by services through
+// pkg/authz and answered by qs-authz-cache from its regional replica; never
+// exposed through the public gateway (spec 02 §5.1).
+package qstack.iam.internal.v1;
+
+import "buf/validate/validate.proto";
+
+// AccessService decides whether a subject holds a permission on a resource.
+service AccessService {
+  // Authorize checks one permission.
+  rpc Authorize(AuthorizeRequest) returns (AuthorizeResponse);
+  // BatchAuthorize checks several permissions at once; responses keep the
+  // order of requests.
+  rpc BatchAuthorize(BatchAuthorizeRequest) returns (BatchAuthorizeResponse);
+}
+
+// Resource is one element of a resource path.
+message Resource {
+  // Resource type, e.g. "organization", "project", "instance".
+  string type = 1 [(buf.validate.field).string = {pattern: "^[a-z][a-zA-Z]{0,62}$"}];
+  // Resource ID, e.g. "prj-01jb...".
+  string id = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+}
+
+// ResourcePath lists the target resource with all its ancestors, root
+// first: [organization, project, instance]. A binding on any element grants
+// access to the target.
+message ResourcePath {
+  repeated Resource resources = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 8
+  }];
+}
+
+message AuthorizeRequest {
+  // Subject (user or service account) ID.
+  string subject_id = 1 [(buf.validate.field).string.min_len = 1];
+  // Permission `<service>.<resource>.<verb>`.
+  string permission = 2 [(buf.validate.field).string = {pattern: "^[a-z][a-zA-Z0-9]*[.][a-z][a-zA-Z0-9]*[.][a-z][a-zA-Z0-9]*$"}];
+  ResourcePath resource = 3 [(buf.validate.field).required = true];
+}
+
+message AuthorizeResponse {
+  bool allowed = 1;
+}
+
+message BatchAuthorizeRequest {
+  repeated AuthorizeRequest requests = 1 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 100
+  }];
+}
+
+message BatchAuthorizeResponse {
+  repeated AuthorizeResponse responses = 1;
+}
