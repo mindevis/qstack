@@ -18,6 +18,9 @@ managed:
     - file_option: go_package
       path: qstack/resourcemanager/internal/v1
       value: github.com/mindevis/qstack/gen/go/qstack/resourcemanager/internalv1;resourcemanagerinternalv1
+    - file_option: go_package
+      path: qstack/agent/internal/v1
+      value: github.com/mindevis/qstack/gen/go/qstack/agent/internalv1;agentinternalv1
 plugins:
   # Generators are pinned in tools/protoc/go.mod (stable protobuf releases only).
   - local: ["go", "tool", "-modfile=tools/protoc/go.mod", "protoc-gen-go"]
