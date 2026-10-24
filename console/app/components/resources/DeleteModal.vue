@@ -1,14 +1,19 @@
 <script setup lang="ts">
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   count?: number
+  // Resource kind in singular, e.g. "instance".
+  kind?: string
 }>(), {
-  count: 0
+  count: 0,
+  kind: 'resource'
 })
 
 const open = ref(false)
+const toast = useToast()
 
 async function onSubmit() {
   await new Promise(resolve => setTimeout(resolve, 1000))
+  toast.add({ title: 'Demo', description: `Deleting ${props.count} ${props.kind}(s) needs the API (phase 1)`, color: 'info' })
   open.value = false
 }
 </script>
@@ -16,7 +21,7 @@ async function onSubmit() {
 <template>
   <UModal
     v-model:open="open"
-    :title="`Delete ${count} customer${count > 1 ? 's' : ''}`"
+    :title="`Delete ${count} ${kind}${count > 1 ? 's' : ''}`"
     :description="`Are you sure, this action cannot be undone.`"
   >
     <slot />

@@ -3,9 +3,9 @@ import type { TableColumn } from '@nuxt/ui'
 import { upperFirst } from 'scule'
 import { getPaginationRowModel } from '@tanstack/table-core'
 import type { Row } from '@tanstack/table-core'
-import type { User } from '~/types'
+import { formatTimeAgo } from '@vueuse/core'
+import type { Instance } from '~/types'
 
-const UAvatar = resolveComponent('UAvatar')
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
@@ -15,30 +15,38 @@ const toast = useToast()
 const table = useTemplateRef('table')
 
 const columnFilters = ref([{
-  id: 'email',
+  id: 'name',
   value: ''
 }])
 const columnVisibility = ref()
-const rowSelection = ref({ 1: true })
+const rowSelection = ref({})
 
-const { data, status } = await useFetch<User[]>('/api/customers', {
+const { data, status } = await useFetch<Instance[]>('/api/instances', {
   lazy: true
 })
 
-function getRowItems(row: Row<User>) {
+function demo(action: string, row: Row<Instance>) {
+  toast.add({
+    title: 'Demo',
+    description: `${action} ${row.original.name}: available with the Compute API (phase 1)`,
+    color: 'info'
+  })
+}
+
+function getRowItems(row: Row<Instance>) {
   return [
     {
       type: 'label',
       label: 'Actions'
     },
     {
-      label: 'Copy customer ID',
+      label: 'Copy instance ID',
       icon: 'i-lucide-copy',
       onSelect() {
-        navigator.clipboard.writeText(row.original.id.toString())
+        navigator.clipboard.writeText(row.original.id)
         toast.add({
           title: 'Copied to clipboard',
-          description: 'Customer ID copied to clipboard'
+          description: 'Instance ID copied to clipboard'
         })
       }
     },
@@ -46,31 +54,42 @@ function getRowItems(row: Row<User>) {
       type: 'separator'
     },
     {
-      label: 'View customer details',
-      icon: 'i-lucide-list'
+      label: 'Start',
+      icon: 'i-lucide-play',
+      disabled: row.original.status !== 'stopped',
+      onSelect: () => demo('Start', row)
     },
     {
-      label: 'View customer payments',
-      icon: 'i-lucide-wallet'
+      label: 'Stop',
+      icon: 'i-lucide-square',
+      disabled: row.original.status !== 'running',
+      onSelect: () => demo('Stop', row)
+    },
+    {
+      label: 'Serial console',
+      icon: 'i-lucide-terminal',
+      onSelect: () => demo('Serial console of', row)
     },
     {
       type: 'separator'
     },
     {
-      label: 'Delete customer',
+      label: 'Delete instance',
       icon: 'i-lucide-trash',
       color: 'error',
-      onSelect() {
-        toast.add({
-          title: 'Customer deleted',
-          description: 'The customer has been deleted.'
-        })
-      }
+      onSelect: () => demo('Delete', row)
     }
   ]
 }
 
-const columns: TableColumn<User>[] = [
+const statusColor = {
+  running: 'success' as const,
+  provisioning: 'info' as const,
+  stopped: 'neutral' as const,
+  error: 'error' as const
+}
+
+const columns: TableColumn<Instance>[] = [
   {
     id: 'select',
     header: ({ table }) =>
@@ -90,34 +109,14 @@ const columns: TableColumn<User>[] = [
       })
   },
   {
-    accessorKey: 'id',
-    header: 'ID'
-  },
-  {
     accessorKey: 'name',
-    header: 'Name',
-    cell: ({ row }) => {
-      return h('div', { class: 'flex items-center gap-3' }, [
-        h(UAvatar, {
-          ...row.original.avatar,
-          size: 'lg'
-        }),
-        h('div', undefined, [
-          h('p', { class: 'font-medium text-highlighted' }, row.original.name),
-          h('p', { class: '' }, `@${row.original.name}`)
-        ])
-      ])
-    }
-  },
-  {
-    accessorKey: 'email',
     header: ({ column }) => {
       const isSorted = column.getIsSorted()
 
       return h(UButton, {
         color: 'neutral',
         variant: 'ghost',
-        label: 'Email',
+        label: 'Name',
         icon: isSorted
           ? isSorted === 'asc'
             ? 'i-lucide-arrow-up-narrow-wide'
@@ -126,28 +125,45 @@ const columns: TableColumn<User>[] = [
         class: '-mx-2.5',
         onClick: () => column.toggleSorting(column.getIsSorted() === 'asc')
       })
+    },
+    cell: ({ row }) => {
+      return h('div', undefined, [
+        h('p', { class: 'font-medium text-highlighted' }, row.original.name),
+        h('p', { class: 'font-mono text-xs' }, row.original.id)
+      ])
     }
-  },
-  {
-    accessorKey: 'location',
-    header: 'Location',
-    cell: ({ row }) => row.original.location
   },
   {
     accessorKey: 'status',
     header: 'Status',
     filterFn: 'equals',
     cell: ({ row }) => {
-      const color = {
-        subscribed: 'success' as const,
-        unsubscribed: 'error' as const,
-        bounced: 'warning' as const
-      }[row.original.status]
-
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
+      return h(UBadge, { class: 'capitalize', variant: 'subtle', color: statusColor[row.original.status] }, () =>
         row.original.status
       )
     }
+  },
+  {
+    accessorKey: 'type',
+    header: 'Type',
+    cell: ({ row }) => `${row.original.type} · ${row.original.vcpus} vCPU · ${row.original.memoryGib} GiB`
+  },
+  {
+    accessorKey: 'zone',
+    header: 'Zone'
+  },
+  {
+    id: 'addresses',
+    header: 'Addresses',
+    cell: ({ row }) => h('div', { class: 'font-mono text-xs' }, [
+      h('p', undefined, row.original.privateIp),
+      row.original.publicIp ? h('p', { class: 'text-primary' }, row.original.publicIp) : null
+    ])
+  },
+  {
+    accessorKey: 'createTime',
+    header: 'Created',
+    cell: ({ row }) => formatTimeAgo(new Date(row.original.createTime))
   },
   {
     id: 'actions',
@@ -191,12 +207,12 @@ watch(() => statusFilter.value, (newVal) => {
   }
 })
 
-const email = computed({
+const name = computed({
   get: (): string => {
-    return (table.value?.tableApi?.getColumn('email')?.getFilterValue() as string) || ''
+    return (table.value?.tableApi?.getColumn('name')?.getFilterValue() as string) || ''
   },
   set: (value: string) => {
-    table.value?.tableApi?.getColumn('email')?.setFilterValue(value || undefined)
+    table.value?.tableApi?.getColumn('name')?.setFilterValue(value || undefined)
   }
 })
 
@@ -207,15 +223,15 @@ const pagination = ref({
 </script>
 
 <template>
-  <UDashboardPanel id="customers">
+  <UDashboardPanel id="instances">
     <template #header>
-      <UDashboardNavbar title="Customers">
+      <UDashboardNavbar title="Instances">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <CustomersAddModal />
+          <InstancesAddModal />
         </template>
       </UDashboardNavbar>
     </template>
@@ -223,14 +239,14 @@ const pagination = ref({
     <template #body>
       <div class="flex flex-wrap items-center justify-between gap-1.5">
         <UInput
-          v-model="email"
+          v-model="name"
           class="max-w-sm"
           icon="i-lucide-search"
-          placeholder="Filter emails..."
+          placeholder="Filter names..."
         />
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <CustomersDeleteModal :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
+          <ResourcesDeleteModal kind="instance" :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
             <UButton
               v-if="table?.tableApi?.getFilteredSelectedRowModel().rows.length"
               label="Delete"
@@ -244,15 +260,16 @@ const pagination = ref({
                 </UKbd>
               </template>
             </UButton>
-          </CustomersDeleteModal>
+          </ResourcesDeleteModal>
 
           <USelect
             v-model="statusFilter"
             :items="[
               { label: 'All', value: 'all' },
-              { label: 'Subscribed', value: 'subscribed' },
-              { label: 'Unsubscribed', value: 'unsubscribed' },
-              { label: 'Bounced', value: 'bounced' }
+              { label: 'Running', value: 'running' },
+              { label: 'Provisioning', value: 'provisioning' },
+              { label: 'Stopped', value: 'stopped' },
+              { label: 'Error', value: 'error' }
             ]"
             :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
             placeholder="Filter status"

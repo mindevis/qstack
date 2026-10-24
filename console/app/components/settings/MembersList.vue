@@ -34,7 +34,7 @@ const items = [{
             {{ member.name }}
           </p>
           <p class="text-muted truncate">
-            {{ member.username }}
+            {{ member.type === 'sa' ? 'Service account' : 'User' }} · {{ member.username }}
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@ const items = [{
       <div class="flex items-center gap-3">
         <USelect
           :model-value="member.role"
-          :items="['member', 'owner']"
+          :items="['admin', 'editor', 'viewer']"
           color="neutral"
           :ui="{ value: 'capitalize', item: 'capitalize' }"
         />

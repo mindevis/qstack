@@ -1,60 +1,38 @@
 import { defineEventHandler } from 'nuxt/server'
+import type { Member } from '~/types'
 
-const members = [{
-  name: 'Anthony Fu',
-  username: 'antfu',
-  role: 'member',
+// Demo access bindings of the organization until the IAM API exists
+// (spec 03 §4, ADR-0017).
+const members: Member[] = [{
+  name: 'Demo Admin',
+  username: 'admin@example.com',
+  type: 'user',
+  role: 'admin',
   avatar: {}
 }, {
-  name: 'Baptiste Leproux',
-  username: 'larbish',
-  role: 'member',
+  name: 'Dev Engineer',
+  username: 'dev@example.com',
+  type: 'user',
+  role: 'editor',
   avatar: {}
 }, {
-  name: 'Benjamin Canac',
-  username: 'benjamincanac',
-  role: 'owner',
+  name: 'Auditor',
+  username: 'audit@example.com',
+  type: 'user',
+  role: 'viewer',
   avatar: {}
 }, {
-  name: 'Céline Dumerc',
-  username: 'celinedumerc',
-  role: 'member',
-  avatar: {}
+  name: 'ci-deployer',
+  username: 'sa-01m5hqpzg0d3m00000000000001',
+  type: 'sa',
+  role: 'editor',
+  avatar: { icon: 'i-lucide-bot' }
 }, {
-  name: 'Daniel Roe',
-  username: 'danielroe',
-  role: 'member',
-  avatar: {}
-}, {
-  name: 'Farnabaz',
-  username: 'farnabaz',
-  role: 'member',
-  avatar: {}
-}, {
-  name: 'Ferdinand Coumau',
-  username: 'FerdinandCoumau',
-  role: 'member',
-  avatar: {}
-}, {
-  name: 'Hugo Richard',
-  username: 'hugorcd',
-  role: 'owner',
-  avatar: {}
-}, {
-  name: 'Pooya Parsa',
-  username: 'pi0',
-  role: 'member',
-  avatar: {}
-}, {
-  name: 'Sarah Moriceau',
-  username: 'SarahM19',
-  role: 'member',
-  avatar: {}
-}, {
-  name: 'Sébastien Chopin',
-  username: 'Atinux',
-  role: 'owner',
-  avatar: {}
+  name: 'monitoring',
+  username: 'sa-01m5hqpzg0d3m00000000000002',
+  type: 'sa',
+  role: 'viewer',
+  avatar: { icon: 'i-lucide-bot' }
 }]
 
 export default defineEventHandler(async () => {

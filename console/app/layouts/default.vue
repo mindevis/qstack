@@ -6,24 +6,60 @@ const route = useRoute()
 const open = ref(false)
 
 const links = [[{
-  label: 'Home',
+  label: 'Overview',
   icon: 'i-lucide-house',
   to: '/',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Inbox',
-  icon: 'i-lucide-inbox',
-  to: '/inbox',
-  badge: '4',
+  label: 'Compute',
+  icon: 'i-lucide-server',
+  defaultOpen: true,
+  type: 'trigger',
+  children: [{
+    label: 'Instances',
+    to: '/compute/instances',
+    onSelect: () => {
+      open.value = false
+    }
+  }]
+}, {
+  label: 'Network',
+  icon: 'i-lucide-network',
+  defaultOpen: true,
+  type: 'trigger',
+  children: [{
+    label: 'Cloud networks',
+    to: '/vpc/networks',
+    onSelect: () => {
+      open.value = false
+    }
+  }]
+}, {
+  label: 'Storage',
+  icon: 'i-lucide-hard-drive',
+  defaultOpen: true,
+  type: 'trigger',
+  children: [{
+    label: 'Disks',
+    to: '/disks',
+    onSelect: () => {
+      open.value = false
+    }
+  }]
+}, {
+  label: 'Operations',
+  icon: 'i-lucide-list-checks',
+  to: '/operations',
+  badge: '2',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Customers',
-  icon: 'i-lucide-users',
-  to: '/customers',
+  label: 'Cluster',
+  icon: 'i-lucide-boxes',
+  to: '/cluster',
   onSelect: () => {
     open.value = false
   }
@@ -31,7 +67,7 @@ const links = [[{
   label: 'Settings',
   to: '/settings',
   icon: 'i-lucide-settings',
-  defaultOpen: true,
+  defaultOpen: false,
   type: 'trigger',
   children: [{
     label: 'General',
@@ -41,7 +77,7 @@ const links = [[{
       open.value = false
     }
   }, {
-    label: 'Members',
+    label: 'Access',
     to: '/settings/members',
     onSelect: () => {
       open.value = false

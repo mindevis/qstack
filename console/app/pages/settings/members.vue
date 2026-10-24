@@ -15,14 +15,14 @@ const filteredMembers = computed(() => {
 <template>
   <div>
     <UPageCard
-      title="Members"
-      description="Invite new members by email address."
+      title="Access"
+      description="Users and service accounts of the organization and their roles (IAM)."
       variant="naked"
       orientation="horizontal"
       class="mb-4"
     >
       <UButton
-        label="Invite people"
+        label="Grant access"
         color="neutral"
         class="w-fit lg:ms-auto"
       />
