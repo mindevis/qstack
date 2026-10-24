@@ -1,0 +1,19 @@
+# L0 stand in namespace qstack-l0 (spec 13 §1.1): the production chart with
+# values-dev.yaml and images from ghcr.io/mindevis/qstack (published from
+# main). A separate DevSpace project: `devspace run l0-down` (purge) removes
+# only this stand, never the dev environment of devspace.yaml.
+#
+#   devspace run l0-up      # or: devspace --config devspace.l0.yaml deploy
+#   devspace run l0-down
+#   L0_NAMESPACE=qstack-l0 deploy/l0/smoke.sh
+version: v2beta1
+name: qstack-l0
+
+deployments:
+  qstack:
+    namespace: qstack-l0
+    helm:
+      chart:
+        name: ./deploy/helm/qstack-control-plane
+      valuesFiles:
+        - ./deploy/helm/qstack-control-plane/values-dev.yaml

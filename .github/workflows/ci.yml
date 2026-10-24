@@ -31,6 +31,7 @@ jobs:
             go.mod
             tools/go.sum
             tools/protoc/go.sum
+            tools/helm/go.sum
 
       - name: Ensure local main ref for buf breaking
         if: github.ref != 'refs/heads/main'
@@ -72,3 +73,43 @@ jobs:
 
       - name: OCI image is signed and verified
         run: test/packaging/image-sign.sh
+
+  l0:
+    name: L0 stand on kind
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.mod
+            tools/go.sum
+            tools/helm/go.sum
+
+      - uses: helm/kind-action@1544676c07bb3570fcb70166beaa07c4528fd4aa # v1.15.1
+        with:
+          version: v0.33.0
+          cluster_name: qstack-l0
+
+      - name: CloudNativePG operator (cluster-wide, as on the stand)
+        run: |
+          kubectl apply --server-side -f https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.30.1/cnpg-1.30.1.yaml
+          kubectl -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=180s
+          kubectl create namespace qstack-l0
+
+      - name: qStack images into kind
+        run: |
+          make image BIN=qs-node IMAGE_REPO=ghcr.io/mindevis/qstack VERSION=ci
+          kind load docker-image ghcr.io/mindevis/qstack/qs-node:ci --name qstack-l0
+
+      - name: make dev-up (spec 13 §1.1 — under 5 minutes)
+        run: make dev-up L0_IMAGE_TAG=ci L0_MAX_SECONDS=300
+
+      - name: make dev-smoke
+        run: make dev-smoke
+
+      - name: make dev-down
+        run: make dev-down

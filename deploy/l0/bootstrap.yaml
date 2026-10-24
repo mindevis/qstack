@@ -1,0 +1,13 @@
+# Bootstrap of the L0 stand: qs-admin bootstrap -file deploy/l0/bootstrap.yaml
+region:
+  id: ru-central1
+  country: RU # billing currency follows the country (spec 09)
+zones: [ru-central1-a]
+address_pools:
+  - name: public-l0
+    cidr: 198.51.100.0/24 # TEST-NET-2: fake public addresses
+instance_types: [s1.small, s1.medium]
+images: [debian-13, ubuntu-24-04]
+organization:
+  name: test
+  admin_email: admin@example.com

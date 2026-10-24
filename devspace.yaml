@@ -148,6 +148,12 @@ dev:
       command: bash
 
 commands:
+  # The L0 stand has its own DevSpace project (devspace.l0.yaml), so purging
+  # it never touches this dev environment.
+  l0-up:
+    command: devspace --config devspace.l0.yaml deploy
+  l0-down:
+    command: devspace --config devspace.l0.yaml purge
   verify:
     command: devspace enter -c dev --label-selector app.kubernetes.io/component=${DEV_COMPONENT} --workdir /workspace -- make verify
   test:

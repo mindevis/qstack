@@ -1,0 +1,7 @@
+qStack control plane ({{ .Values.profile }}) installed as "{{ .Release.Name }}" in {{ .Release.Namespace }}.
+{{- if .Values.openbao.dev }}
+
+WARNING: OpenBao runs in DEV mode (in-memory, unsealed). Development only.
+Root token:
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Release.Name }}-openbao-dev -o jsonpath='{.data.root-token}' | base64 -d
+{{- end }}
