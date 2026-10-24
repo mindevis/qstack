@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+// Protocol between service controllers and host agents (spec 02 §10,
+// ADR-0005). The controller implements HostAgentService; the agent on the
+// host is the client and authenticates with the host certificate (mTLS,
+// SAN spiffe://qstack/<region>/host/<hst-id>). Payloads are
+// service-specific messages packed in Any.
+package qstack.agent.internal.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/any.proto";
+
+// HostAgentService streams a host's desired state and collects its status.
+service HostAgentService {
+  // Watch sends the full desired state of the caller's host, then deltas.
+  rpc Watch(WatchRequest) returns (stream DesiredStateEvent);
+  // ReportStatus receives heartbeats and observed status of items.
+  rpc ReportStatus(stream ReportStatusRequest) returns (ReportStatusResponse);
+  // ReportInventory receives the host's resources (CPU, memory, disks...).
+  rpc ReportInventory(ReportInventoryRequest) returns (ReportInventoryResponse);
+}
+
+message WatchRequest {
+  // Epoch and revision the agent applied last; a matching epoch lets the
+  // server send only the changes after last_revision.
+  string epoch = 1 [(buf.validate.field).string.max_len = 64];
+  uint64 last_revision = 2;
+  string agent_version = 3 [(buf.validate.field).string.max_len = 64];
+}
+
+// ItemKey identifies a desired-state item, e.g. kind "instance", id "ins-...".
+message ItemKey {
+  string kind = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 63
+  }];
+  string id = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+}
+
+message Item {
+  ItemKey key = 1;
+  google.protobuf.Any spec = 2;
+}
+
+// DesiredStateEvent advances the host's desired state to revision.
+message DesiredStateEvent {
+  string epoch = 1;
+  uint64 revision = 2;
+  oneof event {
+    // The complete desired state; items not listed must be removed.
+    Snapshot snapshot = 3;
+    // One change after revision - 1.
+    Delta delta = 4;
+  }
+}
+
+message Snapshot {
+  repeated Item items = 1;
+}
+
+message Delta {
+  repeated Item upserts = 1;
+  repeated ItemKey deletes = 2;
+}
+
+// ReportStatusRequest is one message of the ReportStatus stream (the
+// observed status): a heartbeat every 10 s and item status as it changes.
+message ReportStatusRequest {
+  // Revision of desired state the agent has applied.
+  uint64 applied_revision = 1;
+  string epoch = 2;
+  // Status of items (service-specific Any); empty for a pure heartbeat.
+  repeated ItemStatus items = 3;
+}
+
+message ItemStatus {
+  ItemKey key = 1;
+  google.protobuf.Any status = 2;
+}
+
+message ReportStatusResponse {}
+
+// ReportInventoryRequest carries the host inventory.
+message ReportInventoryRequest {
+  string agent_version = 1 [(buf.validate.field).string.max_len = 64];
+  google.protobuf.Any details = 2;
+}
+
+message ReportInventoryResponse {}
