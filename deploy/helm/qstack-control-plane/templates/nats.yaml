@@ -1,0 +1,104 @@
+{{- if .Values.nats.enabled }}
+{{- $name := printf "%s-nats" .Release.Name }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: nats
+data:
+  nats.conf: |
+    port: 4222
+    http_port: 8222
+    jetstream {
+      store_dir: /data
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: nats
+spec:
+  selector:
+    {{- include "qstack.selector" (dict "root" . "name" "nats") | nindent 4 }}
+  ports:
+    - name: client
+      port: 4222
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-headless
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: nats
+spec:
+  clusterIP: None
+  selector:
+    {{- include "qstack.selector" (dict "root" . "name" "nats") | nindent 4 }}
+  ports:
+    - name: client
+      port: 4222
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: nats
+spec:
+  serviceName: {{ $name }}-headless
+  replicas: {{ .Values.nats.replicas }}
+  selector:
+    matchLabels:
+      {{- include "qstack.selector" (dict "root" . "name" "nats") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qstack.labels" . | nindent 8 }}
+        app.kubernetes.io/name: nats
+      annotations:
+        checksum/config: {{ .Files.Get "templates/nats.yaml" | sha256sum | trunc 16 }}
+    spec:
+      securityContext:
+        {{- include "qstack.podSecurity" . | nindent 8 }}
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: nats
+          image: {{ .Values.nats.image }}
+          args: ["-c", "/etc/nats/nats.conf"]
+          ports:
+            - {name: client, containerPort: 4222}
+            - {name: monitor, containerPort: 8222}
+          readinessProbe:
+            httpGet: {path: "/healthz?js-enabled-only=true", port: monitor}
+            periodSeconds: 5
+          securityContext:
+            {{- include "qstack.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.nats.resources | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /etc/nats}
+            - {name: data, mountPath: /data}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $name }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          {{- include "qstack.selector" (dict "root" . "name" "nats") | nindent 10 }}
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.nats.storage }}
+{{- end }}

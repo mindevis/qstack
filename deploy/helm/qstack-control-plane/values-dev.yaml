@@ -1,0 +1,6 @@
+# L0 stand (13 §1.1): `make dev-up`, `devspace run l0-up`.
+openbao:
+  dev: true
+fakeHosts:
+  enabled: true
+  replicas: 2

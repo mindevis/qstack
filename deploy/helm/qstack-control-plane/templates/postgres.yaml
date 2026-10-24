@@ -1,0 +1,25 @@
+{{- if .Values.postgres.enabled }}
+# One CloudNativePG cluster per region (REQ-PLT-080: a database and a role
+# per service are added with the services).
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}-postgres
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgres
+spec:
+  instances: {{ .Values.postgres.instances }}
+  imageName: {{ .Values.postgres.image }}
+  storage:
+    size: {{ .Values.postgres.storage }}
+  postgresql:
+    parameters:
+      timezone: UTC
+  bootstrap:
+    initdb:
+      database: qstack
+      owner: qstack
+  resources:
+    {{- toYaml .Values.postgres.resources | nindent 4 }}
+{{- end }}

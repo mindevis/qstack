@@ -16,6 +16,9 @@ TOOL        := $(GO) tool -modfile=tools/go.mod
 BUF         := $(TOOL) buf
 GOLANGCI    := $(TOOL) golangci-lint
 SQLC        := $(TOOL) sqlc
+# Helm lives in its own module (Kubernetes client libraries).
+HELM        := $(GO) tool -modfile=tools/helm/go.mod helm
+CHART       := deploy/helm/qstack-control-plane
 
 PROTO_DIR   := api/proto
 GEN_DIR     := gen
@@ -108,8 +111,16 @@ gen-check: ## Fail if `make gen` changes generated code (works without .git)
 	if [ "$$before" != "$$after" ]; then echo "gen-check: generated code is out of date, run 'make gen' and commit"; exit 1; fi; \
 	echo "gen-check: ok"
 
+.PHONY: chart-lint
+chart-lint: ## helm lint + render the control-plane chart (dev values; production values must refuse dev-only parts)
+	$(HELM) lint $(CHART) -f $(CHART)/values-dev.yaml --strict
+	$(HELM) template qstack $(CHART) -n qstack-l0 -f $(CHART)/values-dev.yaml >/dev/null
+	@if $(HELM) template qstack $(CHART) >/dev/null 2>&1; then \
+		echo "chart-lint: default (production) values must not render OpenBao dev mode"; exit 1; fi
+	@echo "chart-lint: ok"
+
 .PHONY: verify
-verify: tidy-check gen-check vet lint licenses test test-integration ## Everything CI runs
+verify: tidy-check gen-check vet lint licenses chart-lint test test-integration ## Everything CI runs
 	@echo "verify: ok"
 
 ##@ Build and packaging
@@ -149,8 +160,25 @@ image: ## Build OCI images (distroless, Debian 13): BIN=<binary> (default: all)
 			-t $(IMAGE_REPO)/$$b:$(VERSION) .; \
 	done
 
-##@ Environments (implemented in T-0.12)
+##@ Environments
 
-.PHONY: e2e dev-up dev-down
-e2e dev-up dev-down:
-	@echo "$@: not implemented yet (roadmap T-0.12)"; exit 1
+# L0 stand (spec 13 §1.1): needs kubectl access to L0_NAMESPACE and the
+# CloudNativePG operator. On the DevSpace stand: `devspace run l0-up`.
+L0_NAMESPACE ?= qstack-l0
+L0_ENV := L0_NAMESPACE=$(L0_NAMESPACE) HELM="$(HELM)"
+
+.PHONY: dev-up
+dev-up: ## Deploy the L0 stand (L0_IMAGE_REGISTRY, L0_IMAGE_TAG, L0_MAX_SECONDS)
+	$(L0_ENV) deploy/l0/up.sh
+
+.PHONY: dev-smoke
+dev-smoke: ## Check a running L0 stand
+	$(L0_ENV) deploy/l0/smoke.sh
+
+.PHONY: dev-down
+dev-down: ## Remove the L0 stand and its volumes
+	$(L0_ENV) deploy/l0/down.sh
+
+.PHONY: e2e
+e2e:
+	@echo "e2e: no scenarios yet (first services: phase 1)"; exit 1

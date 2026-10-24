@@ -1,0 +1,80 @@
+{{- if .Values.openbao.enabled }}
+{{- if not .Values.openbao.dev }}
+{{- fail "openbao: only dev mode exists so far (L0); server mode with a seal is T-1.67. Set openbao.dev=true or openbao.enabled=false" }}
+{{- end }}
+{{- $name := printf "%s-openbao" .Release.Name }}
+{{- $secret := lookup "v1" "Secret" .Release.Namespace (printf "%s-dev" $name) }}
+# DEV MODE: in-memory and unsealed. The root token is random per
+# installation and kept across upgrades.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}-dev
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: openbao
+type: Opaque
+data:
+  root-token: {{ if $secret }}{{ index $secret.data "root-token" }}{{ else }}{{ randAlphaNum 32 | b64enc }}{{ end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: openbao
+spec:
+  selector:
+    {{- include "qstack.selector" (dict "root" . "name" "openbao") | nindent 4 }}
+  ports:
+    - name: api
+      port: 8200
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: openbao
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "qstack.selector" (dict "root" . "name" "openbao") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qstack.labels" . | nindent 8 }}
+        app.kubernetes.io/name: openbao
+    spec:
+      securityContext:
+        {{- include "qstack.podSecurity" . | nindent 8 }}
+        runAsUser: 100
+        runAsGroup: 1000
+      containers:
+        - name: openbao
+          image: {{ .Values.openbao.image }}
+          command: ["bao", "server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
+          env:
+            - name: BAO_DEV_ROOT_TOKEN_ID
+              valueFrom:
+                secretKeyRef: {name: {{ $name }}-dev, key: root-token}
+            - {name: SKIP_SETCAP, value: "true"}
+            - {name: HOME, value: /tmp}
+          ports:
+            - {name: api, containerPort: 8200}
+          readinessProbe:
+            httpGet: {path: /v1/sys/health, port: api}
+            periodSeconds: 5
+          securityContext:
+            {{- include "qstack.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.openbao.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

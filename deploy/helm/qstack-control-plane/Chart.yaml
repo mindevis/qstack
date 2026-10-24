@@ -1,0 +1,9 @@
+apiVersion: v2
+name: qstack-control-plane
+description: qStack control plane (spec 01 §7, ADR-0009). Skeleton for the L0 stand; T-1.67 completes the production profiles.
+type: application
+version: 0.1.0
+appVersion: dev
+home: https://github.com/mindevis/qstack
+sources:
+  - https://github.com/mindevis/qstack

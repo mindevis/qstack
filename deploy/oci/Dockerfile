@@ -22,5 +22,6 @@ LABEL org.opencontainers.image.source=https://github.com/mindevis/qstack \
       org.opencontainers.image.licenses=Apache-2.0 \
       org.opencontainers.image.title=${BINARY}
 COPY --from=build /out/service /usr/local/bin/service
-USER nonroot:nonroot
+# Numeric so that Kubernetes can enforce runAsNonRoot (65532 = nonroot).
+USER 65532:65532
 ENTRYPOINT ["/usr/local/bin/service"]

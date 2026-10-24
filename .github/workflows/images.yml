@@ -1,0 +1,48 @@
+# Publishes the OCI images of every binary to ghcr.io/mindevis/qstack from
+# main (spec 13 §3.9): tags `main` and the commit SHA, signed keyless with
+# cosign (GitHub OIDC identity of this workflow).
+name: images
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write # push to ghcr.io
+      id-token: write # keyless signing
+    env:
+      REPO: ghcr.io/mindevis/qstack
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      - name: Log in to ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build, push and sign
+        run: |
+          sha=$(git rev-parse --short=12 HEAD)
+          make image IMAGE_REPO="$REPO" VERSION="$sha"
+          for b in $(ls cmd); do
+            docker tag "$REPO/$b:$sha" "$REPO/$b:main"
+            docker push -q "$REPO/$b:$sha"
+            docker push -q "$REPO/$b:main"
+            ref=$(docker inspect --format '{{index .RepoDigests 0}}' "$REPO/$b:$sha")
+            cosign sign --yes "$ref"
+            echo "published $ref"
+          done

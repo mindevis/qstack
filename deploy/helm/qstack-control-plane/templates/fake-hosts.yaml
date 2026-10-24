@@ -1,0 +1,85 @@
+{{- if .Values.fakeHosts.enabled }}
+{{- $name := printf "%s-fake-host" .Release.Name }}
+# L0 compute nodes (13 §1.1): pods running the real qs-node; agents on
+# fake drivers and per-host certificates come with T-1.45 / T-1.68.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fake-host
+data:
+  qs-node.yaml: |
+    service: qs-node
+    admin_addr: 0.0.0.0:9101
+    log:
+      level: info
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fake-host
+spec:
+  clusterIP: None
+  selector:
+    {{- include "qstack.selector" (dict "root" . "name" "fake-host") | nindent 4 }}
+  ports:
+    - name: admin
+      port: 9101
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: fake-host
+spec:
+  serviceName: {{ $name }}
+  replicas: {{ .Values.fakeHosts.replicas }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "qstack.selector" (dict "root" . "name" "fake-host") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qstack.labels" . | nindent 8 }}
+        app.kubernetes.io/name: fake-host
+      annotations:
+        checksum/config: {{ .Files.Get "templates/fake-hosts.yaml" | sha256sum | trunc 16 }}
+    spec:
+      {{- with .Values.images.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "qstack.podSecurityQstack" . | nindent 8 }}
+      containers:
+        - name: qs-node
+          image: {{ include "qstack.image" (dict "root" . "binary" "qs-node") }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          args: ["-config", "/etc/qstack/qs-node.yaml"]
+          ports:
+            - {name: admin, containerPort: 9101}
+          readinessProbe:
+            httpGet: {path: /readyz, port: admin}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: admin}
+            periodSeconds: 10
+          securityContext:
+            {{- include "qstack.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.fakeHosts.resources | nindent 12 }}
+          volumeMounts:
+            - {name: config, mountPath: /etc/qstack}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $name }}
+{{- end }}

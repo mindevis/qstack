@@ -26,6 +26,6 @@ if cosign verify --key "$work/other/cosign.pub" --insecure-ignore-tlog=true "${l
 fi
 
 # The image runs as non-root and reports its version.
-[ "$(docker inspect --format '{{.Config.User}}' "$ref")" = nonroot:nonroot ]
+[ "$(docker inspect --format '{{.Config.User}}' "$ref")" = 65532:65532 ]
 docker run --rm "$ref" -version
 echo "image-sign: ok"
