@@ -26,4 +26,8 @@ for h in $hosts; do
 	k wait --for=condition=Ready "$h" --timeout=60s >/dev/null
 done
 echo "fake hosts: ok ($(echo "$hosts" | wc -l))"
+
+k rollout status "deployment/$release-console" --timeout=120s >/dev/null
+k run console-check --rm -i --restart=Never --image=curlimages/curl:8.22.0 --quiet -- 	curl -fsS "http://$release-console/" | grep "<title>" >/dev/null
+echo "console: ok (server-rendered)"
 echo "smoke: ok"

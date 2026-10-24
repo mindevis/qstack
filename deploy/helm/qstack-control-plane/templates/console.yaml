@@ -1,0 +1,93 @@
+{{- if .Values.console.enabled }}
+{{- $name := printf "%s-console" .Release.Name }}
+# Web console (ADR-0017): Nuxt SSR + BFF, only in the control plane.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: console
+spec:
+  selector:
+    {{- include "qstack.selector" (dict "root" . "name" "console") | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: console
+spec:
+  replicas: {{ .Values.console.replicas }}
+  selector:
+    matchLabels:
+      {{- include "qstack.selector" (dict "root" . "name" "console") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "qstack.labels" . | nindent 8 }}
+        app.kubernetes.io/name: console
+    spec:
+      {{- with .Values.images.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- include "qstack.podSecurityQstack" . | nindent 8 }}
+      containers:
+        - name: console
+          image: {{ include "qstack.image" (dict "root" . "binary" "qs-console") }}
+          imagePullPolicy: {{ .Values.images.pullPolicy }}
+          env:
+            - {name: NUXT_API_GATEWAY_URL, value: {{ .Values.console.apiGatewayUrl | quote }}}
+          ports:
+            - {name: http, containerPort: 3000}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 10
+          securityContext:
+            {{- include "qstack.containerSecurity" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.console.resources | nindent 12 }}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- if .Values.console.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "qstack.labels" . | nindent 4 }}
+    app.kubernetes.io/name: console
+spec:
+  {{- with .Values.console.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  rules:
+    - {{- with .Values.console.ingress.host }}
+      host: {{ . }}
+      {{- end }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $name }}
+                port:
+                  name: http
+{{- end }}
+{{- end }}

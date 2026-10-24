@@ -17,3 +17,8 @@ deployments:
         name: ./deploy/helm/qstack-control-plane
       valuesFiles:
         - ./deploy/helm/qstack-control-plane/values-dev.yaml
+      values:
+        # The stand's ingress controller is Traefik (console at http://<node>/).
+        console:
+          ingress:
+            className: traefik
