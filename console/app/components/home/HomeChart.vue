@@ -12,7 +12,8 @@ type DataRecord = {
   amount: number
 }
 
-const formatNumber = new Intl.NumberFormat('en', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format
+// Demo: vCPU-hours consumed by the project (metering, spec 09).
+const formatNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format
 
 const formatDate = (date: Date): string => {
   return ({
@@ -29,9 +30,9 @@ const { data } = await useAsyncData<DataRecord[]>('chart', async () => {
     monthly: eachMonthOfInterval
   } as Record<Period, typeof eachDayOfInterval>)[props.period](props.range)
 
-  // The y axis rounds the highest amount up to its next step, so keeping it just above 7,000 leaves room above the peak
-  const amounts = dates.map(() => randomInt(1000, 7000))
-  amounts[randomInt(0, amounts.length - 1)] = randomInt(7100, 7200)
+  // The y axis rounds the highest amount up to its next step, so keeping it just above 700 leaves room above the peak
+  const amounts = dates.map(() => randomInt(100, 700))
+  amounts[randomInt(0, amounts.length - 1)] = randomInt(710, 720)
 
   return dates.map((date, i) => ({ date: formatDate(date), amount: amounts[i]! }))
 }, {
@@ -47,7 +48,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          Revenue
+          vCPU-hours
         </p>
         <p class="text-3xl text-highlighted font-semibold">
           {{ formatNumber(total) }}
@@ -60,7 +61,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
       curve="monotone"
       :data="data"
       index="date"
-      :categories="[{ key: 'amount', label: 'Revenue' }]"
+      :categories="[{ key: 'amount', label: 'vCPU-hours' }]"
       :x-axis="false"
       :y-axis="false"
       :grid="true"
@@ -68,7 +69,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
       :aspect-ratio="3"
       :initial-width="1152"
       class="-my-px"
-      aria-label="Revenue"
+      aria-label="vCPU-hours"
     />
   </UCard>
 </template>

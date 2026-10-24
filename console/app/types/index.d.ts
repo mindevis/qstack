@@ -1,30 +1,18 @@
 import type { AvatarProps } from '@nuxt/ui'
 
-export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
-export type SaleStatus = 'paid' | 'failed' | 'refunded'
-
 export interface User {
-  id: number
+  id: string
   name: string
-  email: string
+  email?: string
   avatar?: AvatarProps
-  status: UserStatus
-  location: string
 }
 
-export interface Mail {
-  id: number
-  unread?: boolean
-  from: User
-  subject: string
-  body: string
-  date: string
-}
-
+// IAM access binding of a subject in the organization (spec 03 §4).
 export interface Member {
   name: string
   username: string
-  role: 'member' | 'owner'
+  type: 'user' | 'sa'
+  role: 'admin' | 'editor' | 'viewer'
   avatar: AvatarProps
 }
 
@@ -33,15 +21,8 @@ export interface Stat {
   icon: string
   value: number | string
   variation: number
+  to: string
   formatter?: (value: number) => string
-}
-
-export interface Sale {
-  id: string
-  date: string
-  status: SaleStatus
-  email: string
-  amount: number
 }
 
 export interface Notification {
@@ -57,4 +38,69 @@ export type Period = 'daily' | 'weekly' | 'monthly'
 export interface Range {
   start: Date
   end: Date
+}
+
+// qStack resources (demo data until the public API exists, ADR-0017).
+
+export type InstanceStatus = 'running' | 'stopped' | 'provisioning' | 'error'
+
+export interface Instance {
+  id: string
+  name: string
+  zone: string
+  type: string
+  vcpus: number
+  memoryGib: number
+  status: InstanceStatus
+  privateIp: string
+  publicIp?: string
+  createTime: string
+}
+
+export interface Subnet {
+  id: string
+  name: string
+  zone: string
+  cidr: string
+}
+
+export interface Network {
+  id: string
+  name: string
+  subnets: Subnet[]
+  createTime: string
+}
+
+export type DiskStatus = 'ready' | 'creating' | 'error'
+
+export interface Disk {
+  id: string
+  name: string
+  type: 'local-ssd' | 'network-ssd' | 'network-hdd'
+  sizeGib: number
+  status: DiskStatus
+  attachedTo?: string
+  zone: string
+}
+
+export interface Operation {
+  id: string
+  description: string
+  resourceId: string
+  createdBy: string
+  createTime: string
+  done: boolean
+  error?: string
+}
+
+export interface ClusterNode {
+  id: string
+  name: string
+  zone: string
+  status: 'ready' | 'unreachable' | 'maintenance'
+  version: string
+  vcpus: { used: number, total: number }
+  memoryGib: { used: number, total: number }
+  instances: number
+  lastHeartbeat: string
 }

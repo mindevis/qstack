@@ -6,13 +6,17 @@ import type { Period, Range } from '~/types'
 const { isNotificationsSlideoverOpen } = useDashboard()
 
 const items = [[{
-  label: 'New mail',
-  icon: 'i-lucide-send',
-  to: '/inbox'
+  label: 'New instance',
+  icon: 'i-lucide-server',
+  to: '/compute/instances'
 }, {
-  label: 'New customer',
-  icon: 'i-lucide-user-plus',
-  to: '/customers'
+  label: 'New network',
+  icon: 'i-lucide-network',
+  to: '/vpc/networks'
+}, {
+  label: 'New disk',
+  icon: 'i-lucide-hard-drive',
+  to: '/disks'
 }]] satisfies DropdownMenuItem[][]
 
 const range = shallowRef<Range>({
@@ -25,7 +29,7 @@ const period = ref<Period>('daily')
 <template>
   <UDashboardPanel id="home">
     <template #header>
-      <UDashboardNavbar title="Home" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar title="Overview" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -63,7 +67,7 @@ const period = ref<Period>('daily')
     <template #body>
       <HomeStats :period="period" :range="range" />
       <HomeChart :period="period" :range="range" />
-      <HomeSales :period="period" :range="range" />
+      <HomeOperations />
     </template>
   </UDashboardPanel>
 </template>

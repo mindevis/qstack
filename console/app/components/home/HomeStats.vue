@@ -1,62 +1,41 @@
 <script setup lang="ts">
-import type { Period, Range, Stat } from '~/types'
+import type { Disk, Instance, Period, Range, Stat } from '~/types'
 
 const props = defineProps<{
   period: Period
   range: Range
 }>()
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  })
-}
+const [{ data: instances }, { data: disks }] = await Promise.all([
+  useFetch<Instance[]>('/api/instances', { default: () => [] }),
+  useFetch<Disk[]>('/api/disks', { default: () => [] })
+])
 
-const baseStats = [{
-  title: 'Customers',
-  icon: 'i-lucide-users',
-  minValue: 400,
-  maxValue: 1000,
-  minVariation: -15,
-  maxVariation: 25
-}, {
-  title: 'Conversions',
-  icon: 'i-lucide-chart-pie',
-  minValue: 1000,
-  maxValue: 2000,
-  minVariation: -10,
-  maxVariation: 20
-}, {
-  title: 'Revenue',
-  icon: 'i-lucide-circle-dollar-sign',
-  minValue: 200000,
-  maxValue: 500000,
-  minVariation: -20,
-  maxVariation: 30,
-  formatter: formatCurrency
-}, {
-  title: 'Orders',
-  icon: 'i-lucide-shopping-cart',
-  minValue: 100,
-  maxValue: 300,
-  minVariation: -5,
-  maxVariation: 15
-}]
-
+// Current project usage; the variation over the period is demo data until
+// metering exists (spec 09).
 const { data: stats } = await useAsyncData<Stat[]>('stats', async () => {
-  return baseStats.map((stat) => {
-    const value = randomInt(stat.minValue, stat.maxValue)
-    const variation = randomInt(stat.minVariation, stat.maxVariation)
-
-    return {
-      title: stat.title,
-      icon: stat.icon,
-      value: stat.formatter ? stat.formatter(value) : value,
-      variation
-    }
-  })
+  const running = instances.value.filter(i => i.status === 'running')
+  return [{
+    title: 'Instances',
+    icon: 'i-lucide-server',
+    value: `${running.length} / ${instances.value.length}`,
+    to: '/compute/instances'
+  }, {
+    title: 'vCPU',
+    icon: 'i-lucide-cpu',
+    value: running.reduce((sum, i) => sum + i.vcpus, 0),
+    to: '/compute/instances'
+  }, {
+    title: 'Memory, GiB',
+    icon: 'i-lucide-memory-stick',
+    value: running.reduce((sum, i) => sum + i.memoryGib, 0),
+    to: '/compute/instances'
+  }, {
+    title: 'Disks, GiB',
+    icon: 'i-lucide-hard-drive',
+    value: disks.value.reduce((sum, d) => sum + d.sizeGib, 0),
+    to: '/disks'
+  }].map(stat => ({ ...stat, variation: randomInt(-15, 25) }))
 }, {
   watch: [() => props.period, () => props.range],
   default: () => []
@@ -70,7 +49,7 @@ const { data: stats } = await useAsyncData<Stat[]>('stats', async () => {
       :key="index"
       :icon="stat.icon"
       :title="stat.title"
-      to="/customers"
+      :to="stat.to"
       variant="subtle"
       :ui="{
         container: 'gap-y-1.5',
