@@ -2,3 +2,8 @@ qStack
 Copyright 2026 The qStack Authors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+console/ is based on the Nuxt UI dashboard template
+(https://github.com/nuxt-ui-templates/dashboard, commit 7d78d4078eed),
+Copyright (c) 2025 Nuxt UI Templates, licensed under the MIT License; see
+console/LICENSE.
