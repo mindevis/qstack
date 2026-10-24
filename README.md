@@ -27,6 +27,9 @@ devspace run verify    # make verify внутри пода
 | `make test-integration` | интеграционные тесты (тег `integration`) |
 | `make licenses` | проверка лицензий зависимостей (совместимость с Apache-2.0) |
 | `make verify` | всё, что проверяет CI |
+| `make build` | статические бинарники в `bin/linux-<arch>/` |
+| `make deb` | `.deb` (Debian 13) для `qs-node` и агентов в `dist/` |
+| `make image BIN=<binary>` | OCI-образ (distroless, Debian 13) |
 
 Версии инструментов закреплены в `tools/go.mod` и `tools/protoc/go.mod` и запускаются через `go tool`, глобально ничего ставить не нужно.
 

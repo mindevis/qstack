@@ -112,6 +112,43 @@ gen-check: ## Fail if `make gen` changes generated code (works without .git)
 verify: tidy-check gen-check vet lint licenses test test-integration ## Everything CI runs
 	@echo "verify: ok"
 
+##@ Build and packaging
+
+VERSION     ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+COMMIT      ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+ARCH        ?= amd64
+# Package versions must start with a digit (Debian policy).
+DEB_VERSION ?= $(if $(filter v%,$(VERSION)),$(patsubst v%,%,$(VERSION)),0.0.0~$(VERSION))
+LDFLAGS     := -s -w -X github.com/mindevis/qstack/pkg/version.Version=$(VERSION) -X github.com/mindevis/qstack/pkg/version.Commit=$(COMMIT)
+BINARIES    := $(notdir $(wildcard cmd/*))
+# Host binaries shipped as .deb (the rest are OCI images of the control plane).
+DEB_BINARIES := qs-node
+IMAGE_REPO  ?= localhost:5000/qstack
+OCI_BUILDER ?= docker
+
+.PHONY: build
+build: ## Build static linux binaries into bin/linux-$(ARCH)/
+	@for b in $(BINARIES); do \
+		echo "build: $$b"; \
+		CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) $(GO) build -trimpath -ldflags '$(LDFLAGS)' -o bin/linux-$(ARCH)/$$b ./cmd/$$b; \
+	done
+
+.PHONY: deb
+deb: build ## Build .deb packages of host binaries into dist/
+	@mkdir -p dist bin/deb
+	@for b in $(DEB_BINARIES); do \
+		cp bin/linux-$(ARCH)/$$b bin/deb/$$b; \
+		VERSION=$(DEB_VERSION) ARCH=$(ARCH) $(TOOL) nfpm package -f deploy/nfpm/$$b.yaml -p deb -t dist/; \
+	done
+
+.PHONY: image
+image: ## Build OCI images (distroless, Debian 13): BIN=<binary> (default: all)
+	@for b in $(or $(BIN),$(BINARIES)); do \
+		$(OCI_BUILDER) build -f deploy/oci/Dockerfile --build-arg BINARY=$$b \
+			--build-arg VERSION=$(VERSION) --build-arg COMMIT=$(COMMIT) \
+			-t $(IMAGE_REPO)/$$b:$(VERSION) .; \
+	done
+
 ##@ Environments (implemented in T-0.12)
 
 .PHONY: e2e dev-up dev-down

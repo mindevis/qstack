@@ -1,0 +1,44 @@
+# Debian 13 package of qs-node (nfpm). Built by `make deb`:
+#   VERSION=… ARCH=amd64 go tool -modfile=tools/go.mod nfpm package -f deploy/nfpm/qs-node.yaml -p deb
+name: qs-node
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+version_schema: none
+section: admin
+priority: optional
+maintainer: qStack <noreply@github.com>
+description: |
+  qStack node service: console and API proxy of a compute node.
+vendor: qStack
+homepage: https://github.com/mindevis/qstack
+license: Apache-2.0
+depends:
+  - systemd
+contents:
+  - src: bin/deb/qs-node # staged by `make deb` for the target ARCH
+    dst: /usr/bin/qs-node
+    file_info:
+      mode: 0755
+  - src: deploy/systemd/qs-node.service
+    dst: /usr/lib/systemd/system/qs-node.service
+    file_info:
+      mode: 0644
+  - src: deploy/systemd/qstack.sysusers
+    dst: /usr/lib/sysusers.d/qstack.conf
+    file_info:
+      mode: 0644
+  - src: deploy/qs-node/qs-node.yaml
+    dst: /etc/qstack/qs-node.yaml
+    type: config|noreplace
+    file_info:
+      mode: 0640
+      group: root
+  - src: LICENSE
+    dst: /usr/share/doc/qs-node/copyright
+    file_info:
+      mode: 0644
+scripts:
+  postinstall: deploy/nfpm/scripts/qs-node-postinst.sh
+  preremove: deploy/nfpm/scripts/qs-node-prerm.sh
+  postremove: deploy/nfpm/scripts/qs-node-postrm.sh

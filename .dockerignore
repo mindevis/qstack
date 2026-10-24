@@ -1,0 +1,11 @@
+# Only sources go into image builds; SDD docs and local state never do.
+.git/
+docs/
+CLAUDE.md
+AGENTS.md
+CLAUDE.local.md
+.claude/
+.devspace/
+bin/
+dist/
+node_modules/
