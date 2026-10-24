@@ -1,0 +1,2 @@
+# System user for qStack host services (systemd-sysusers).
+u qstack - "qStack services" /var/lib/qstack /usr/sbin/nologin

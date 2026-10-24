@@ -1,0 +1,5 @@
+# qs-node configuration. Environment variables QS_* override these keys.
+service: qs-node
+admin_addr: 127.0.0.1:9101
+log:
+  level: info

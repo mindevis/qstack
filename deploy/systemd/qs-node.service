@@ -1,0 +1,58 @@
+# qs-node on a compute node (spec 15 §2). Hardening template for qStack
+# host binaries (qs-node and agents): start from this unit and relax only
+# what a binary provably needs (e.g. agents talking to libvirt or LVM),
+# documenting each exception.
+[Unit]
+Description=qStack node service
+Documentation=https://github.com/mindevis/qstack
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/qs-node -config /etc/qstack/qs-node.yaml
+Restart=always
+RestartSec=2s
+TimeoutStopSec=20s
+
+User=qstack
+Group=qstack
+StateDirectory=qstack/qs-node
+StateDirectoryMode=0700
+UMask=0077
+
+# No privileges at all: qs-node is a proxy (REQ-NODE-016).
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SecureBits=noroot-locked
+
+# Filesystem: read-only system, private /tmp and devices, no home access.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+ProcSubset=pid
+
+# Kernel interfaces.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RemoveIPC=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

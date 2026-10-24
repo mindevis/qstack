@@ -38,3 +38,37 @@ jobs:
 
       - name: make verify
         run: make verify
+
+  package:
+    name: packaging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      # Local registry for the signing smoke test; nothing is published.
+      registry:
+        image: registry:2
+        ports: ["5000:5000"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # git describe for package versions
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.mod
+            tools/go.sum
+
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      - name: Build .deb
+        run: make deb
+
+      - name: .deb installs and starts under systemd
+        run: test/packaging/deb-smoke.sh
+
+      - name: OCI image is signed and verified
+        run: test/packaging/image-sign.sh
