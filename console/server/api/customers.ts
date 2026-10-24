@@ -6,7 +6,6 @@ const customers: User[] = [{
   name: 'Alex Smith',
   email: 'alex.smith@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=1'
   },
   status: 'subscribed',
   location: 'New York, USA'
@@ -15,7 +14,6 @@ const customers: User[] = [{
   name: 'Jordan Brown',
   email: 'jordan.brown@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=2'
   },
   status: 'unsubscribed',
   location: 'London, UK'
@@ -24,7 +22,6 @@ const customers: User[] = [{
   name: 'Taylor Green',
   email: 'taylor.green@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=3'
   },
   status: 'bounced',
   location: 'Paris, France'
@@ -33,7 +30,6 @@ const customers: User[] = [{
   name: 'Morgan White',
   email: 'morgan.white@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=4'
   },
   status: 'subscribed',
   location: 'Berlin, Germany'
@@ -42,7 +38,6 @@ const customers: User[] = [{
   name: 'Casey Gray',
   email: 'casey.gray@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=5'
   },
   status: 'subscribed',
   location: 'Tokyo, Japan'
@@ -51,7 +46,6 @@ const customers: User[] = [{
   name: 'Jamie Johnson',
   email: 'jamie.johnson@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=6'
   },
   status: 'subscribed',
   location: 'Sydney, Australia'
@@ -60,7 +54,6 @@ const customers: User[] = [{
   name: 'Riley Davis',
   email: 'riley.davis@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=7'
   },
   status: 'subscribed',
   location: 'New York, USA'
@@ -69,7 +62,6 @@ const customers: User[] = [{
   name: 'Kelly Wilson',
   email: 'kelly.wilson@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=8'
   },
   status: 'subscribed',
   location: 'London, UK'
@@ -78,7 +70,6 @@ const customers: User[] = [{
   name: 'Drew Moore',
   email: 'drew.moore@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=9'
   },
   status: 'bounced',
   location: 'Paris, France'
@@ -87,7 +78,6 @@ const customers: User[] = [{
   name: 'Jordan Taylor',
   email: 'jordan.taylor@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=10'
   },
   status: 'subscribed',
   location: 'Berlin, Germany'
@@ -96,7 +86,6 @@ const customers: User[] = [{
   name: 'Morgan Anderson',
   email: 'morgan.anderson@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=11'
   },
   status: 'subscribed',
   location: 'Tokyo, Japan'
@@ -105,7 +94,6 @@ const customers: User[] = [{
   name: 'Casey Thomas',
   email: 'casey.thomas@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=12'
   },
   status: 'unsubscribed',
   location: 'Sydney, Australia'
@@ -114,7 +102,6 @@ const customers: User[] = [{
   name: 'Jamie Jackson',
   email: 'jamie.jackson@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=13'
   },
   status: 'unsubscribed',
   location: 'New York, USA'
@@ -123,7 +110,6 @@ const customers: User[] = [{
   name: 'Riley White',
   email: 'riley.white@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=14'
   },
   status: 'unsubscribed',
   location: 'London, UK'
@@ -132,7 +118,6 @@ const customers: User[] = [{
   name: 'Kelly Harris',
   email: 'kelly.harris@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=15'
   },
   status: 'subscribed',
   location: 'Paris, France'
@@ -141,7 +126,6 @@ const customers: User[] = [{
   name: 'Drew Martin',
   email: 'drew.martin@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=16'
   },
   status: 'subscribed',
   location: 'Berlin, Germany'
@@ -150,7 +134,6 @@ const customers: User[] = [{
   name: 'Alex Thompson',
   email: 'alex.thompson@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=17'
   },
   status: 'unsubscribed',
   location: 'Tokyo, Japan'
@@ -159,7 +142,6 @@ const customers: User[] = [{
   name: 'Jordan Garcia',
   email: 'jordan.garcia@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=18'
   },
   status: 'subscribed',
   location: 'Sydney, Australia'
@@ -168,7 +150,6 @@ const customers: User[] = [{
   name: 'Taylor Rodriguez',
   email: 'taylor.rodriguez@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=19'
   },
   status: 'bounced',
   location: 'New York, USA'
@@ -177,7 +158,6 @@ const customers: User[] = [{
   name: 'Morgan Lopez',
   email: 'morgan.lopez@example.com',
   avatar: {
-    src: 'https://i.pravatar.cc/128?u=20'
   },
   status: 'subscribed',
   location: 'London, UK'

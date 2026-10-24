@@ -14,10 +14,12 @@ const profileSchema = z.object({
 
 type ProfileSchema = z.output<typeof profileSchema>
 
+const { data: session } = await useFetch('/api/session', { key: 'session' })
+
 const profile = reactive<Partial<ProfileSchema>>({
-  name: 'Benjamin Canac',
-  email: 'ben@nuxtlabs.com',
-  username: 'benjamincanac',
+  name: session.value?.user.name,
+  email: session.value?.user.email,
+  username: session.value?.user.username,
   avatar: undefined,
   bio: undefined
 })

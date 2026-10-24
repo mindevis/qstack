@@ -5,39 +5,34 @@ defineProps<{
   collapsed?: boolean
 }>()
 
-const teams = ref([{
-  label: 'Nuxt',
-  avatar: {
-    src: 'https://github.com/nuxt.png',
-    alt: 'Nuxt'
-  }
-}, {
-  label: 'NuxtHub',
-  avatar: {
-    src: 'https://github.com/nuxt-hub.png',
-    alt: 'NuxtHub'
-  }
-}, {
-  label: 'NuxtLabs',
-  avatar: {
-    src: 'https://github.com/nuxtlabs.png',
-    alt: 'NuxtLabs'
-  }
-}])
-const selectedTeam = ref(teams.value[0])
+// Organization / project switcher (was the template's team switcher).
+const { data: session } = await useFetch('/api/session', { key: 'session' })
+
+const organization = computed(() => session.value?.organizations[0])
+const projects = computed(() => organization.value?.projects ?? [])
+const selectedProjectId = useState('project', () => projects.value[0]?.id)
+const selectedProject = computed(() => projects.value.find(p => p.id === selectedProjectId.value) ?? projects.value[0])
 
 const items = computed<DropdownMenuItem[][]>(() => {
-  return [teams.value.map(team => ({
-    ...team,
+  return [[{
+    type: 'label',
+    label: organization.value?.name
+  }], projects.value.map(project => ({
+    label: project.name,
+    icon: 'i-lucide-folder',
+    type: 'checkbox' as const,
+    checked: project.id === selectedProject.value?.id,
     onSelect() {
-      selectedTeam.value = team
+      selectedProjectId.value = project.id
     }
   })), [{
-    label: 'Create team',
-    icon: 'i-lucide-circle-plus'
+    label: 'Create project',
+    icon: 'i-lucide-circle-plus',
+    disabled: true
   }, {
-    label: 'Manage teams',
-    icon: 'i-lucide-cog'
+    label: 'Manage organization',
+    icon: 'i-lucide-cog',
+    disabled: true
   }]]
 })
 </script>
@@ -50,8 +45,8 @@ const items = computed<DropdownMenuItem[][]>(() => {
   >
     <UButton
       v-bind="{
-        ...selectedTeam,
-        label: collapsed ? undefined : selectedTeam?.label,
+        icon: 'i-lucide-cloud',
+        label: collapsed ? undefined : `${organization?.name} / ${selectedProject?.name}`,
         trailingIcon: collapsed ? undefined : 'i-lucide-chevrons-up-down'
       }"
       color="neutral"
@@ -61,6 +56,7 @@ const items = computed<DropdownMenuItem[][]>(() => {
       class="data-[state=open]:bg-elevated"
       :class="[!collapsed && 'py-2']"
       :ui="{
+        leadingIcon: 'text-primary',
         trailingIcon: 'text-dimmed'
       }"
     />
