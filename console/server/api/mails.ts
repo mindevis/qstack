@@ -7,7 +7,6 @@ const mails = [{
     name: 'Alex Smith',
     email: 'alex.smith@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=1'
     }
   },
   subject: 'Meeting Schedule: Q1 Marketing Strategy Review',
@@ -35,7 +34,6 @@ Tel: (555) 123-4567`,
     name: 'Jordan Brown',
     email: 'jordan.brown@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=2'
     }
   },
   subject: 'RE: Project Phoenix - Sprint 3 Update',
@@ -69,7 +67,6 @@ Mobile: +1 (555) 234-5678`,
     name: 'Taylor Green',
     email: 'taylor.green@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=3'
     }
   },
   subject: 'Lunch Plans',
@@ -90,7 +87,6 @@ Taylor`,
     name: 'Morgan White',
     email: 'morgan.white@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=4'
     }
   },
   subject: 'New Proposal: Project Horizon',
@@ -183,7 +179,6 @@ Ext: 4567`,
     name: 'Riley Davis',
     email: 'riley.davis@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=7'
     }
   },
   subject: '[Mandatory] New DevOps Tools Training Session',
@@ -222,7 +217,6 @@ M: (555) 777-8888`,
     name: 'Kelly Wilson',
     email: 'kelly.wilson@example.com',
     avatar: {
-      src: 'https://i.pravatar.cc/128?u=8'
     }
   },
   subject: '🎉 Happy Birthday!',
