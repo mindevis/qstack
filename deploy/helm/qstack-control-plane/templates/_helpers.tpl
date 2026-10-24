@@ -22,6 +22,13 @@ seccompProfile:
   type: RuntimeDefault
 {{- end -}}
 
+{{/* qStack images: distroless nonroot (uid/gid 65532). */}}
+{{- define "qstack.podSecurityQstack" -}}
+{{ include "qstack.podSecurity" . }}
+runAsUser: 65532
+runAsGroup: 65532
+{{- end -}}
+
 {{- define "qstack.containerSecurity" -}}
 allowPrivilegeEscalation: false
 readOnlyRootFilesystem: true

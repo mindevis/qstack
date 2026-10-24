@@ -58,7 +58,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- include "qstack.podSecurity" . | nindent 8 }}
+        {{- include "qstack.podSecurityQstack" . | nindent 8 }}
       containers:
         - name: qs-node
           image: {{ include "qstack.image" (dict "root" . "binary" "qs-node") }}
