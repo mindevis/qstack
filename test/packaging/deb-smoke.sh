@@ -23,8 +23,9 @@ for _ in $(seq 60); do
 	sleep 1
 done
 
-docker cp "$deb" "$cid:/tmp/qs-node.deb"
-ctr apt-get install -y -q /tmp/qs-node.deb >/dev/null
+# Not /tmp: systemd mounts a fresh tmpfs over it, hiding copied files.
+docker cp "$deb" "$cid:/root/qs-node.deb"
+ctr apt-get install -y -q /root/qs-node.deb >/dev/null
 
 for _ in $(seq 30); do ctr systemctl is-active -q qs-node && break; sleep 1; done
 ctr systemctl is-active qs-node
