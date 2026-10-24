@@ -4,20 +4,21 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Period, Range } from '~/types'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
+const { t } = useI18n()
 
-const items = [[{
-  label: 'New instance',
+const items = computed(() => [[{
+  label: t('home.newInstance'),
   icon: 'i-lucide-server',
   to: '/compute/instances'
 }, {
-  label: 'New network',
+  label: t('home.newNetwork'),
   icon: 'i-lucide-network',
   to: '/vpc/networks'
 }, {
-  label: 'New disk',
+  label: t('home.newDisk'),
   icon: 'i-lucide-hard-drive',
   to: '/disks'
-}]] satisfies DropdownMenuItem[][]
+}]] satisfies DropdownMenuItem[][])
 
 const range = shallowRef<Range>({
   start: sub(new Date(), { days: 14 }),
@@ -29,13 +30,13 @@ const period = ref<Period>('daily')
 <template>
   <UDashboardPanel id="home">
     <template #header>
-      <UDashboardNavbar title="Overview" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar :title="t('home.title')" :ui="{ right: 'gap-3' }">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UTooltip text="Notifications" :shortcuts="['N']">
+          <UTooltip :text="t('home.notifications')" :shortcuts="['N']">
             <UButton
               color="neutral"
               variant="ghost"

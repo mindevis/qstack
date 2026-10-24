@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { format } from 'date-fns'
 import type { Operation } from '~/types'
 
 const props = defineProps<{
@@ -9,20 +8,22 @@ const props = defineProps<{
 const emits = defineEmits(['close'])
 
 const toast = useToast()
+const { t } = useI18n()
+const { dateTime } = useFormat()
 
 const status = computed(() => {
-  if (!props.operation.done) return { label: 'Running', color: 'info' as const }
-  if (props.operation.error) return { label: 'Failed', color: 'error' as const }
-  return { label: 'Done', color: 'success' as const }
+  if (!props.operation.done) return { label: t('status.inProgress'), color: 'info' as const }
+  if (props.operation.error) return { label: t('status.failed'), color: 'error' as const }
+  return { label: t('status.done'), color: 'success' as const }
 })
 
 function copy(value: string) {
   navigator.clipboard.writeText(value)
-  toast.add({ title: 'Copied to clipboard', description: value })
+  toast.add({ title: t('common.copied'), description: value })
 }
 
 function onCancel() {
-  toast.add({ title: 'Demo', description: 'Cancelling operations needs qs-operations (phase 1)', color: 'info' })
+  toast.add({ title: t('app.demo'), description: t('operations.cancelDemo'), color: 'info' })
 }
 </script>
 
@@ -40,7 +41,7 @@ function onCancel() {
       </template>
 
       <template #right>
-        <UTooltip text="Copy operation ID">
+        <UTooltip :text="t('operations.copyId')">
           <UButton
             icon="i-lucide-copy"
             color="neutral"
@@ -51,7 +52,7 @@ function onCancel() {
 
         <UButton
           v-if="!operation.done"
-          label="Cancel"
+          :label="t('operations.cancel')"
           color="neutral"
           variant="outline"
           icon="i-lucide-circle-stop"
@@ -81,26 +82,26 @@ function onCancel() {
         <UBadge :color="status.color" variant="subtle">
           {{ status.label }}
         </UBadge>
-        <span class="text-muted text-sm">{{ format(new Date(operation.createTime), 'dd MMM HH:mm') }}</span>
+        <span class="text-muted text-sm">{{ dateTime(operation.createTime) }}</span>
       </div>
     </div>
 
     <div class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 text-sm">
       <dl class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
         <dt class="text-muted">
-          Resource
+          {{ t('common.resource') }}
         </dt>
         <dd class="font-mono">
           {{ operation.resourceId }}
         </dd>
         <dt class="text-muted">
-          Started by
+          {{ t('common.startedBy') }}
         </dt>
         <dd>{{ operation.createdBy }}</dd>
         <dt class="text-muted">
-          Done
+          {{ t('operations.done') }}
         </dt>
-        <dd>{{ operation.done ? 'yes' : 'no' }}</dd>
+        <dd>{{ operation.done ? t('common.yes') : t('common.no') }}</dd>
       </dl>
 
       <UAlert
@@ -108,7 +109,7 @@ function onCancel() {
         color="error"
         variant="subtle"
         icon="i-lucide-circle-x"
-        title="Operation failed"
+        :title="t('operations.failedTitle')"
         :description="operation.error"
       />
     </div>

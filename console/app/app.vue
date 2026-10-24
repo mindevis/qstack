@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import * as uiLocales from '@nuxt/ui/locale'
+
 const colorMode = useColorMode()
+const { t, locale } = useI18n()
 
 const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
 
@@ -13,12 +16,12 @@ useHead({
     { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
   ],
   htmlAttrs: {
-    lang: 'en'
+    lang: () => locale.value
   }
 })
 
 const title = 'qStack'
-const description = 'qStack cloud console'
+const description = computed(() => t('app.description'))
 
 useSeoMeta({
   title,
@@ -29,7 +32,7 @@ useSeoMeta({
 </script>
 
 <template>
-  <UApp>
+  <UApp :locale="uiLocales[locale as 'ru' | 'en']">
     <NuxtLoadingIndicator />
 
     <NuxtLayout>

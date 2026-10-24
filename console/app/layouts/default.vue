@@ -3,53 +3,55 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute()
 
+const { t } = useI18n()
+
 const open = ref(false)
 
-const links = [[{
-  label: 'Overview',
+const links = computed(() => [[{
+  label: t('nav.overview'),
   icon: 'i-lucide-house',
   to: '/',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Compute',
+  label: t('nav.compute'),
   icon: 'i-lucide-server',
   defaultOpen: true,
   type: 'trigger',
   children: [{
-    label: 'Instances',
+    label: t('nav.instances'),
     to: '/compute/instances',
     onSelect: () => {
       open.value = false
     }
   }]
 }, {
-  label: 'Network',
+  label: t('nav.network'),
   icon: 'i-lucide-network',
   defaultOpen: true,
   type: 'trigger',
   children: [{
-    label: 'Cloud networks',
+    label: t('nav.networks'),
     to: '/vpc/networks',
     onSelect: () => {
       open.value = false
     }
   }]
 }, {
-  label: 'Storage',
+  label: t('nav.storage'),
   icon: 'i-lucide-hard-drive',
   defaultOpen: true,
   type: 'trigger',
   children: [{
-    label: 'Disks',
+    label: t('nav.disks'),
     to: '/disks',
     onSelect: () => {
       open.value = false
     }
   }]
 }, {
-  label: 'Operations',
+  label: t('nav.operations'),
   icon: 'i-lucide-list-checks',
   to: '/operations',
   badge: '2',
@@ -57,66 +59,66 @@ const links = [[{
     open.value = false
   }
 }, {
-  label: 'Cluster',
+  label: t('nav.cluster'),
   icon: 'i-lucide-boxes',
   to: '/cluster',
   onSelect: () => {
     open.value = false
   }
 }, {
-  label: 'Settings',
+  label: t('nav.settings'),
   to: '/settings',
   icon: 'i-lucide-settings',
   defaultOpen: false,
   type: 'trigger',
   children: [{
-    label: 'General',
+    label: t('nav.general'),
     to: '/settings',
     exact: true,
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Access',
+    label: t('nav.access'),
     to: '/settings/members',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Notifications',
+    label: t('nav.notifications'),
     to: '/settings/notifications',
     onSelect: () => {
       open.value = false
     }
   }, {
-    label: 'Security',
+    label: t('nav.security'),
     to: '/settings/security',
     onSelect: () => {
       open.value = false
     }
   }]
 }], [{
-  label: 'Feedback',
+  label: t('nav.feedback'),
   icon: 'i-lucide-message-circle',
   to: 'https://github.com/mindevis/qstack/issues',
   target: '_blank'
 }, {
-  label: 'Help & Support',
+  label: t('nav.help'),
   icon: 'i-lucide-info',
   to: 'https://github.com/mindevis/qstack',
   target: '_blank'
-}]] satisfies NavigationMenuItem[][]
+}]] satisfies NavigationMenuItem[][])
 
 const groups = computed(() => [{
   id: 'links',
-  label: 'Go to',
-  items: links.flat()
+  label: t('nav.goTo'),
+  items: links.value.flat()
 }, {
   id: 'code',
-  label: 'Code',
+  label: t('nav.code'),
   items: [{
     id: 'source',
-    label: 'View page source',
+    label: t('nav.viewSource'),
     icon: 'i-simple-icons-github',
     to: `https://github.com/mindevis/qstack/blob/main/console/app/pages${route.path === '/' ? '/index' : route.path}.vue`,
     target: '_blank'

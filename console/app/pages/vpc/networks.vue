@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { formatTimeAgo } from '@vueuse/core'
 import type { Network } from '~/types'
 
 const toast = useToast()
+const { t } = useI18n()
+const { timeAgo } = useFormat()
 const { data: networks } = await useFetch<Network[]>('/api/networks', { default: () => [] })
 
 const q = ref('')
 const filtered = computed(() => networks.value.filter(n => n.name.includes(q.value.toLowerCase())))
 
 function onCreate() {
-  toast.add({ title: 'Demo', description: 'Networks are created by the VPC API (phase 1)', color: 'info' })
+  toast.add({ title: t('app.demo'), description: t('networks.demo'), color: 'info' })
 }
 </script>
 
 <template>
   <UDashboardPanel id="networks">
     <template #header>
-      <UDashboardNavbar title="Cloud networks">
+      <UDashboardNavbar :title="t('networks.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UButton label="New network" icon="i-lucide-plus" @click="onCreate" />
+          <UButton :label="t('networks.new')" icon="i-lucide-plus" @click="onCreate" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -32,7 +33,7 @@ function onCreate() {
         v-model="q"
         class="max-w-sm"
         icon="i-lucide-search"
-        placeholder="Filter networks..."
+        :placeholder="t('networks.filter')"
       />
 
       <UPageCard
@@ -52,7 +53,7 @@ function onCreate() {
                 {{ network.id }}
               </p>
             </div>
-            <span class="ms-auto text-xs text-muted">Created {{ formatTimeAgo(new Date(network.createTime)) }}</span>
+            <span class="ms-auto text-xs text-muted">{{ t('networks.created', { time: timeAgo(network.createTime) }) }}</span>
           </div>
         </template>
 

@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { format, isToday } from 'date-fns'
+import { enUS, ru } from 'date-fns/locale'
 import type { Operation } from '~/types'
 
 const props = defineProps<{
   operations: Operation[]
 }>()
+
+const { t, locale } = useI18n()
+const dateLocale = computed(() => ({ locale: locale.value === 'ru' ? ru : enUS }))
 
 const operationsRefs = ref<Record<string, Element | null>>({})
 
@@ -67,13 +71,13 @@ defineShortcuts({
             <UChip v-else-if="op.error" color="error" />
           </div>
 
-          <span>{{ isToday(new Date(op.createTime)) ? format(new Date(op.createTime), 'HH:mm') : format(new Date(op.createTime), 'dd MMM') }}</span>
+          <span>{{ isToday(new Date(op.createTime)) ? format(new Date(op.createTime), 'HH:mm', dateLocale) : format(new Date(op.createTime), 'dd MMM', dateLocale) }}</span>
         </div>
         <p class="truncate" :class="[!op.done && 'font-semibold']">
           {{ op.description }}
         </p>
         <p class="text-dimmed line-clamp-1">
-          {{ op.error ?? (op.done ? 'Done' : 'Running…') }}
+          {{ op.error ?? (op.done ? t('operations.done') : t('operations.runningNow')) }}
         </p>
       </div>
     </div>

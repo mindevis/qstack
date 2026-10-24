@@ -1,0 +1,231 @@
+{
+  "app": {
+    "description": "qStack cloud console",
+    "demo": "Demo",
+    "demoApi": "Available with the public API (phase 1)"
+  },
+  "nav": {
+    "overview": "Overview",
+    "compute": "Compute",
+    "instances": "Instances",
+    "network": "Network",
+    "networks": "Cloud networks",
+    "storage": "Storage",
+    "disks": "Disks",
+    "operations": "Operations",
+    "cluster": "Cluster",
+    "settings": "Settings",
+    "general": "General",
+    "access": "Access",
+    "notifications": "Notifications",
+    "security": "Security",
+    "feedback": "Feedback",
+    "help": "Help & Support",
+    "goTo": "Go to",
+    "code": "Code",
+    "viewSource": "View page source",
+    "search": "Search..."
+  },
+  "common": {
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "actions": "Actions",
+    "all": "All",
+    "display": "Display",
+    "filterNames": "Filter names...",
+    "filterStatus": "Status",
+    "rowsSelected": "{selected} of {total} row(s) selected",
+    "copied": "Copied to clipboard",
+    "name": "Name",
+    "status": "Status",
+    "type": "Type",
+    "zone": "Zone",
+    "created": "Created",
+    "size": "Size",
+    "attachedTo": "Attached to",
+    "addresses": "Addresses",
+    "resource": "Resource",
+    "startedBy": "Started by",
+    "date": "Date",
+    "operation": "Operation",
+    "yes": "yes",
+    "no": "no"
+  },
+  "status": {
+    "running": "Running",
+    "stopped": "Stopped",
+    "provisioning": "Provisioning",
+    "error": "Error",
+    "ready": "Ready",
+    "creating": "Creating",
+    "maintenance": "Maintenance",
+    "unreachable": "Unreachable",
+    "done": "Done",
+    "inProgress": "Running",
+    "failed": "Failed"
+  },
+  "project": {
+    "create": "Create project",
+    "manage": "Manage organization"
+  },
+  "user": {
+    "profile": "Profile",
+    "billing": "Billing",
+    "settings": "Settings",
+    "theme": "Theme",
+    "primary": "Primary",
+    "neutral": "Neutral",
+    "appearance": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "language": "Language",
+    "github": "qStack on GitHub",
+    "logout": "Log out"
+  },
+  "home": {
+    "title": "Overview",
+    "notifications": "Notifications",
+    "newInstance": "New instance",
+    "newNetwork": "New network",
+    "newDisk": "New disk",
+    "statInstances": "Instances",
+    "statVcpu": "vCPU",
+    "statMemory": "Memory, GiB",
+    "statDisks": "Disks, GiB",
+    "vcpuHours": "vCPU-hours",
+    "period": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "range": {
+      "days7": "Last 7 days",
+      "days14": "Last 14 days",
+      "days30": "Last 30 days",
+      "months3": "Last 3 months",
+      "months6": "Last 6 months",
+      "year": "Last year",
+      "pick": "Pick a date"
+    }
+  },
+  "instances": {
+    "title": "Instances",
+    "new": "New instance",
+    "newDescription": "Create a virtual machine in the project",
+    "instanceType": "Instance type",
+    "nameRule": "Lowercase letters, digits and hyphens; starts with a letter",
+    "copyId": "Copy instance ID",
+    "copiedId": "Instance ID copied to clipboard",
+    "start": "Start",
+    "stop": "Stop",
+    "serialConsole": "Serial console",
+    "deleteOne": "Delete instance",
+    "kind": "instances",
+    "createDemo": "Instance {name} will be created by the Compute API (phase 1)",
+    "actionDemo": "{action} {name}: available with the Compute API (phase 1)"
+  },
+  "disks": {
+    "title": "Disks",
+    "new": "New disk",
+    "kind": "disks",
+    "demo": "Disks are created by the Block Storage API (phase 1)"
+  },
+  "networks": {
+    "title": "Cloud networks",
+    "new": "New network",
+    "filter": "Filter networks...",
+    "created": "Created {time}",
+    "demo": "Networks are created by the VPC API (phase 1)"
+  },
+  "operations": {
+    "title": "Operations",
+    "running": "Running",
+    "failed": "Failed",
+    "runningNow": "Running…",
+    "copyId": "Copy operation ID",
+    "cancel": "Cancel",
+    "cancelDemo": "Cancelling operations comes with qs-operations (phase 1)",
+    "failedTitle": "Operation failed",
+    "done": "Done"
+  },
+  "cluster": {
+    "title": "Cluster",
+    "profile": "profile: {name}",
+    "memory": "Memory",
+    "instancesZone": "{n} instances · {zone}",
+    "heartbeat": "heartbeat {time}"
+  },
+  "delete": {
+    "title": "Delete {kind}: {count}",
+    "description": "This action cannot be undone.",
+    "demo": "Deletion comes with the public API (phase 1)"
+  },
+  "notifications": {
+    "title": "Notifications"
+  },
+  "settings": {
+    "title": "Settings",
+    "docs": "Documentation",
+    "profile": {
+      "title": "Profile",
+      "description": "Members of the organization see this information.",
+      "save": "Save changes",
+      "saved": "Your settings have been updated.",
+      "success": "Success",
+      "name": "Name",
+      "nameHint": "Shown in operations and the audit trail.",
+      "email": "Email",
+      "emailHint": "Used to sign in and for notifications.",
+      "username": "Username",
+      "usernameHint": "Your unique name for signing in.",
+      "avatar": "Avatar",
+      "avatarHint": "JPG, GIF or PNG. 1MB Max.",
+      "choose": "Choose",
+      "bio": "Bio",
+      "bioHint": "Brief description of your profile."
+    },
+    "access": {
+      "title": "Access",
+      "description": "Users and service accounts of the organization and their roles (IAM).",
+      "grant": "Grant access",
+      "search": "Search members",
+      "user": "User",
+      "sa": "Service account",
+      "edit": "Edit",
+      "remove": "Revoke access"
+    },
+    "notifications": {
+      "channels": "Notification channels",
+      "channelsHint": "Where can we notify you?",
+      "email": "Email",
+      "emailHint": "Receive a daily email digest.",
+      "desktop": "Desktop",
+      "desktopHint": "Receive desktop notifications.",
+      "updates": "Cloud events",
+      "updatesHint": "What to tell you about.",
+      "operations": "Finished operations",
+      "operationsHint": "When a long-running operation completes or fails.",
+      "quotas": "Quotas",
+      "quotasHint": "When usage approaches a quota limit.",
+      "security": "Important security events",
+      "securityHint": "New access keys, role changes, sign-in from a new device."
+    },
+    "security": {
+      "password": "Password",
+      "passwordHint": "Confirm your current password before setting a new one.",
+      "current": "Current password",
+      "new": "New password",
+      "min": "Must be at least 12 characters",
+      "different": "Passwords must be different",
+      "update": "Update",
+      "account": "Account",
+      "accountHint": "Deleting the account is irreversible: all its data will be deleted.",
+      "deleteAccount": "Delete account"
+    }
+  },
+  "error": {
+    "title": "Page not found",
+    "description": "We are sorry but this page could not be found."
+  }
+}

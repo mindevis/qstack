@@ -3,7 +3,6 @@ import type { TableColumn } from '@nuxt/ui'
 import { upperFirst } from 'scule'
 import { getPaginationRowModel } from '@tanstack/table-core'
 import type { Row } from '@tanstack/table-core'
-import { formatTimeAgo } from '@vueuse/core'
 import type { Instance } from '~/types'
 
 const UButton = resolveComponent('UButton')
@@ -12,6 +11,8 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UCheckbox = resolveComponent('UCheckbox')
 
 const toast = useToast()
+const { t } = useI18n()
+const { timeAgo } = useFormat()
 const table = useTemplateRef('table')
 
 const columnFilters = ref([{
@@ -27,8 +28,8 @@ const { data, status } = await useFetch<Instance[]>('/api/instances', {
 
 function demo(action: string, row: Row<Instance>) {
   toast.add({
-    title: 'Demo',
-    description: `${action} ${row.original.name}: available with the Compute API (phase 1)`,
+    title: t('app.demo'),
+    description: t('instances.actionDemo', { action, name: row.original.name }),
     color: 'info'
   })
 }
@@ -37,16 +38,16 @@ function getRowItems(row: Row<Instance>) {
   return [
     {
       type: 'label',
-      label: 'Actions'
+      label: t('common.actions')
     },
     {
-      label: 'Copy instance ID',
+      label: t('instances.copyId'),
       icon: 'i-lucide-copy',
       onSelect() {
         navigator.clipboard.writeText(row.original.id)
         toast.add({
-          title: 'Copied to clipboard',
-          description: 'Instance ID copied to clipboard'
+          title: t('common.copied'),
+          description: t('instances.copiedId')
         })
       }
     },
@@ -54,30 +55,30 @@ function getRowItems(row: Row<Instance>) {
       type: 'separator'
     },
     {
-      label: 'Start',
+      label: t('instances.start'),
       icon: 'i-lucide-play',
       disabled: row.original.status !== 'stopped',
-      onSelect: () => demo('Start', row)
+      onSelect: () => demo(t('instances.start'), row)
     },
     {
-      label: 'Stop',
+      label: t('instances.stop'),
       icon: 'i-lucide-square',
       disabled: row.original.status !== 'running',
-      onSelect: () => demo('Stop', row)
+      onSelect: () => demo(t('instances.stop'), row)
     },
     {
-      label: 'Serial console',
+      label: t('instances.serialConsole'),
       icon: 'i-lucide-terminal',
-      onSelect: () => demo('Serial console of', row)
+      onSelect: () => demo(t('instances.serialConsole'), row)
     },
     {
       type: 'separator'
     },
     {
-      label: 'Delete instance',
+      label: t('instances.deleteOne'),
       icon: 'i-lucide-trash',
       color: 'error',
-      onSelect: () => demo('Delete', row)
+      onSelect: () => demo(t('common.delete'), row)
     }
   ]
 }
@@ -89,7 +90,7 @@ const statusColor = {
   error: 'error' as const
 }
 
-const columns: TableColumn<Instance>[] = [
+const columns = computed<TableColumn<Instance>[]>(() => [
   {
     id: 'select',
     header: ({ table }) =>
@@ -116,7 +117,7 @@ const columns: TableColumn<Instance>[] = [
       return h(UButton, {
         color: 'neutral',
         variant: 'ghost',
-        label: 'Name',
+        label: t('common.name'),
         icon: isSorted
           ? isSorted === 'asc'
             ? 'i-lucide-arrow-up-narrow-wide'
@@ -135,26 +136,26 @@ const columns: TableColumn<Instance>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
+    header: t('common.status'),
     filterFn: 'equals',
     cell: ({ row }) => {
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color: statusColor[row.original.status] }, () =>
-        row.original.status
+      return h(UBadge, { variant: 'subtle', color: statusColor[row.original.status] }, () =>
+        t(`status.${row.original.status}`)
       )
     }
   },
   {
     accessorKey: 'type',
-    header: 'Type',
+    header: t('common.type'),
     cell: ({ row }) => `${row.original.type} · ${row.original.vcpus} vCPU · ${row.original.memoryGib} GiB`
   },
   {
     accessorKey: 'zone',
-    header: 'Zone'
+    header: t('common.zone')
   },
   {
     id: 'addresses',
-    header: 'Addresses',
+    header: t('common.addresses'),
     cell: ({ row }) => h('div', { class: 'font-mono text-xs' }, [
       h('p', undefined, row.original.privateIp),
       row.original.publicIp ? h('p', { class: 'text-primary' }, row.original.publicIp) : null
@@ -162,8 +163,8 @@ const columns: TableColumn<Instance>[] = [
   },
   {
     accessorKey: 'createTime',
-    header: 'Created',
-    cell: ({ row }) => formatTimeAgo(new Date(row.original.createTime))
+    header: t('common.created'),
+    cell: ({ row }) => timeAgo(row.original.createTime)
   },
   {
     id: 'actions',
@@ -190,7 +191,7 @@ const columns: TableColumn<Instance>[] = [
       )
     }
   }
-]
+])
 
 const statusFilter = ref('all')
 
@@ -225,7 +226,7 @@ const pagination = ref({
 <template>
   <UDashboardPanel id="instances">
     <template #header>
-      <UDashboardNavbar title="Instances">
+      <UDashboardNavbar :title="t('instances.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -242,14 +243,14 @@ const pagination = ref({
           v-model="name"
           class="max-w-sm"
           icon="i-lucide-search"
-          placeholder="Filter names..."
+          :placeholder="t('common.filterNames')"
         />
 
         <div class="flex flex-wrap items-center gap-1.5">
-          <ResourcesDeleteModal kind="instance" :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
+          <ResourcesDeleteModal :kind="t('instances.kind')" :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
             <UButton
               v-if="table?.tableApi?.getFilteredSelectedRowModel().rows.length"
-              label="Delete"
+              :label="t('common.delete')"
               color="error"
               variant="subtle"
               icon="i-lucide-trash"
@@ -265,14 +266,14 @@ const pagination = ref({
           <USelect
             v-model="statusFilter"
             :items="[
-              { label: 'All', value: 'all' },
-              { label: 'Running', value: 'running' },
-              { label: 'Provisioning', value: 'provisioning' },
-              { label: 'Stopped', value: 'stopped' },
-              { label: 'Error', value: 'error' }
+              { label: t('common.all'), value: 'all' },
+              { label: t('status.running'), value: 'running' },
+              { label: t('status.provisioning'), value: 'provisioning' },
+              { label: t('status.stopped'), value: 'stopped' },
+              { label: t('status.error'), value: 'error' }
             ]"
             :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
-            placeholder="Filter status"
+            :placeholder="t('common.filterStatus')"
             class="min-w-28"
           />
           <UDropdownMenu
@@ -295,7 +296,7 @@ const pagination = ref({
             :content="{ align: 'end' }"
           >
             <UButton
-              label="Display"
+              :label="t('common.display')"
               color="neutral"
               variant="outline"
               trailing-icon="i-lucide-settings-2"
@@ -329,8 +330,10 @@ const pagination = ref({
 
       <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
         <div class="text-sm text-muted">
-          {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of
-          {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
+          {{ t('common.rowsSelected', {
+            selected: table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0,
+            total: table?.tableApi?.getFilteredRowModel().rows.length || 0
+          }) }}
         </div>
 
         <div class="flex items-center gap-1.5">

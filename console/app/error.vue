@@ -5,14 +5,16 @@ defineProps<{
   error: NuxtError
 }>()
 
+const { t, locale } = useI18n()
+
 useSeoMeta({
-  title: 'Page not found',
-  description: 'We are sorry but this page could not be found.'
+  title: () => t('error.title'),
+  description: () => t('error.description')
 })
 
 useHead({
   htmlAttrs: {
-    lang: 'en'
+    lang: () => locale.value
   }
 })
 </script>

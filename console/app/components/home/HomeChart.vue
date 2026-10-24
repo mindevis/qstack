@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, format } from 'date-fns'
+import { enUS, ru } from 'date-fns/locale'
 import type { Period, Range } from '~/types'
 
 const props = defineProps<{
@@ -7,19 +8,22 @@ const props = defineProps<{
   range: Range
 }>()
 
+const { t, locale } = useI18n()
+
 type DataRecord = {
   date: string
   amount: number
 }
 
 // Demo: vCPU-hours consumed by the project (metering, spec 09).
-const formatNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 }).format
+const formatNumber = (value: number) => new Intl.NumberFormat(locale.value, { maximumFractionDigits: 0 }).format(value)
 
 const formatDate = (date: Date): string => {
+  const options = { locale: locale.value === 'ru' ? ru : enUS }
   return ({
-    daily: format(date, 'd MMM'),
-    weekly: format(date, 'd MMM yyyy'),
-    monthly: format(date, 'MMM yyy')
+    daily: format(date, 'd MMM', options),
+    weekly: format(date, 'd MMM yyyy', options),
+    monthly: format(date, 'MMM yyy', options)
   })[props.period]
 }
 
@@ -36,7 +40,7 @@ const { data } = await useAsyncData<DataRecord[]>('chart', async () => {
 
   return dates.map((date, i) => ({ date: formatDate(date), amount: amounts[i]! }))
 }, {
-  watch: [() => props.period, () => props.range],
+  watch: [() => props.period, () => props.range, locale],
   default: () => []
 })
 
@@ -48,7 +52,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
     <template #header>
       <div>
         <p class="text-xs text-muted uppercase mb-1.5">
-          vCPU-hours
+          {{ t('home.vcpuHours') }}
         </p>
         <p class="text-3xl text-highlighted font-semibold">
           {{ formatNumber(total) }}
@@ -61,7 +65,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
       curve="monotone"
       :data="data"
       index="date"
-      :categories="[{ key: 'amount', label: 'vCPU-hours' }]"
+      :categories="[{ key: 'amount', label: t('home.vcpuHours') }]"
       :x-axis="false"
       :y-axis="false"
       :grid="true"
@@ -69,7 +73,7 @@ const total = computed(() => data.value.reduce((acc: number, { amount }) => acc 
       :aspect-ratio="3"
       :initial-width="1152"
       class="-my-px"
-      aria-label="vCPU-hours"
+      :aria-label="t('home.vcpuHours')"
     />
   </UCard>
 </template>

@@ -2,6 +2,8 @@
 import { eachDayOfInterval } from 'date-fns'
 import type { Period, Range } from '~/types'
 
+const { t } = useI18n()
+
 const model = defineModel<Period>({ required: true })
 
 const props = defineProps<{
@@ -41,9 +43,9 @@ watch(periods, () => {
 <template>
   <USelect
     v-model="model"
-    :items="periods"
+    :items="periods.map(p => ({ label: t(`home.period.${p}`), value: p }))"
     variant="ghost"
     class="data-[state=open]:bg-elevated"
-    :ui="{ value: 'capitalize', itemLabel: 'capitalize', trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
+    :ui="{ trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200' }"
   />
 </template>

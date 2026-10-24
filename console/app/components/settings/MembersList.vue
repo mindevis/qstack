@@ -6,14 +6,16 @@ defineProps<{
   members: Member[]
 }>()
 
-const items = [{
-  label: 'Edit member',
+const { t } = useI18n()
+
+const items = computed(() => [{
+  label: t('settings.access.edit'),
   onSelect: () => console.log('Edit member')
 }, {
-  label: 'Remove member',
+  label: t('settings.access.remove'),
   color: 'error' as const,
   onSelect: () => console.log('Remove member')
-}] satisfies DropdownMenuItem[]
+}] satisfies DropdownMenuItem[])
 </script>
 
 <template>
@@ -34,7 +36,7 @@ const items = [{
             {{ member.name }}
           </p>
           <p class="text-muted truncate">
-            {{ member.type === 'sa' ? 'Service account' : 'User' }} · {{ member.username }}
+            {{ member.type === 'sa' ? t('settings.access.sa') : t('settings.access.user') }} · {{ member.username }}
           </p>
         </div>
       </div>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { Member } from '~/types'
 
+const { t } = useI18n()
+
 const { data: members } = await useFetch<Member[]>('/api/members', { default: () => [] })
 
 const q = ref('')
@@ -15,14 +17,14 @@ const filteredMembers = computed(() => {
 <template>
   <div>
     <UPageCard
-      title="Access"
-      description="Users and service accounts of the organization and their roles (IAM)."
+      :title="t('settings.access.title')"
+      :description="t('settings.access.description')"
       variant="naked"
       orientation="horizontal"
       class="mb-4"
     >
       <UButton
-        label="Grant access"
+        :label="t('settings.access.grant')"
         color="neutral"
         class="w-fit lg:ms-auto"
       />
@@ -33,7 +35,7 @@ const filteredMembers = computed(() => {
         <UInput
           v-model="q"
           icon="i-lucide-search"
-          placeholder="Search members"
+          :placeholder="t('settings.access.search')"
           autofocus
           class="w-full"
         />

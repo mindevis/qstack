@@ -1,0 +1,231 @@
+{
+  "app": {
+    "description": "Консоль облака qStack",
+    "demo": "Демо",
+    "demoApi": "Доступно с публичным API (фаза 1)"
+  },
+  "nav": {
+    "overview": "Обзор",
+    "compute": "Compute",
+    "instances": "Виртуальные машины",
+    "network": "Сеть",
+    "networks": "Облачные сети",
+    "storage": "Хранилище",
+    "disks": "Диски",
+    "operations": "Операции",
+    "cluster": "Кластер",
+    "settings": "Настройки",
+    "general": "Общие",
+    "access": "Доступ",
+    "notifications": "Уведомления",
+    "security": "Безопасность",
+    "feedback": "Обратная связь",
+    "help": "Помощь",
+    "goTo": "Перейти",
+    "code": "Код",
+    "viewSource": "Исходный код страницы",
+    "search": "Поиск..."
+  },
+  "common": {
+    "cancel": "Отмена",
+    "create": "Создать",
+    "delete": "Удалить",
+    "actions": "Действия",
+    "all": "Все",
+    "display": "Колонки",
+    "filterNames": "Фильтр по имени...",
+    "filterStatus": "Статус",
+    "rowsSelected": "Выбрано {selected} из {total}",
+    "copied": "Скопировано в буфер обмена",
+    "name": "Имя",
+    "status": "Статус",
+    "type": "Тип",
+    "zone": "Зона",
+    "created": "Создано",
+    "size": "Размер",
+    "attachedTo": "Подключён к",
+    "addresses": "Адреса",
+    "resource": "Ресурс",
+    "startedBy": "Инициатор",
+    "date": "Дата",
+    "operation": "Операция",
+    "yes": "да",
+    "no": "нет"
+  },
+  "status": {
+    "running": "Работает",
+    "stopped": "Остановлена",
+    "provisioning": "Создаётся",
+    "error": "Ошибка",
+    "ready": "Готов",
+    "creating": "Создаётся",
+    "maintenance": "Обслуживание",
+    "unreachable": "Недоступен",
+    "done": "Выполнена",
+    "inProgress": "Выполняется",
+    "failed": "Ошибка"
+  },
+  "project": {
+    "create": "Создать проект",
+    "manage": "Управление организацией"
+  },
+  "user": {
+    "profile": "Профиль",
+    "billing": "Биллинг",
+    "settings": "Настройки",
+    "theme": "Цвета",
+    "primary": "Основной",
+    "neutral": "Нейтральный",
+    "appearance": "Тема",
+    "light": "Светлая",
+    "dark": "Тёмная",
+    "language": "Язык",
+    "github": "qStack на GitHub",
+    "logout": "Выйти"
+  },
+  "home": {
+    "title": "Обзор",
+    "notifications": "Уведомления",
+    "newInstance": "Новая ВМ",
+    "newNetwork": "Новая сеть",
+    "newDisk": "Новый диск",
+    "statInstances": "Виртуальные машины",
+    "statVcpu": "vCPU",
+    "statMemory": "Память, ГиБ",
+    "statDisks": "Диски, ГиБ",
+    "vcpuHours": "vCPU·часы",
+    "period": {
+      "daily": "По дням",
+      "weekly": "По неделям",
+      "monthly": "По месяцам"
+    },
+    "range": {
+      "days7": "Последние 7 дней",
+      "days14": "Последние 14 дней",
+      "days30": "Последние 30 дней",
+      "months3": "Последние 3 месяца",
+      "months6": "Последние 6 месяцев",
+      "year": "Последний год",
+      "pick": "Выберите период"
+    }
+  },
+  "instances": {
+    "title": "Виртуальные машины",
+    "new": "Новая ВМ",
+    "newDescription": "Создать виртуальную машину в проекте",
+    "instanceType": "Тип ВМ",
+    "nameRule": "Строчные латинские буквы, цифры и дефис; начинается с буквы",
+    "copyId": "Копировать ID",
+    "copiedId": "ID виртуальной машины скопирован",
+    "start": "Запустить",
+    "stop": "Остановить",
+    "serialConsole": "Серийная консоль",
+    "deleteOne": "Удалить ВМ",
+    "kind": "ВМ",
+    "createDemo": "ВМ {name} будет создана через Compute API (фаза 1)",
+    "actionDemo": "{action} {name}: доступно с Compute API (фаза 1)"
+  },
+  "disks": {
+    "title": "Диски",
+    "new": "Новый диск",
+    "kind": "дисков",
+    "demo": "Диски создаются через Block Storage API (фаза 1)"
+  },
+  "networks": {
+    "title": "Облачные сети",
+    "new": "Новая сеть",
+    "filter": "Фильтр сетей...",
+    "created": "Создана {time}",
+    "demo": "Сети создаются через VPC API (фаза 1)"
+  },
+  "operations": {
+    "title": "Операции",
+    "running": "Выполняются",
+    "failed": "С ошибкой",
+    "runningNow": "Выполняется…",
+    "copyId": "Копировать ID операции",
+    "cancel": "Отменить",
+    "cancelDemo": "Отмена операций появится вместе с qs-operations (фаза 1)",
+    "failedTitle": "Операция завершилась с ошибкой",
+    "done": "Завершена"
+  },
+  "cluster": {
+    "title": "Кластер",
+    "profile": "профиль: {name}",
+    "memory": "Память",
+    "instancesZone": "ВМ: {n} · {zone}",
+    "heartbeat": "heartbeat {time}"
+  },
+  "delete": {
+    "title": "Удалить {kind}: {count}",
+    "description": "Действие нельзя отменить.",
+    "demo": "Удаление появится вместе с публичным API (фаза 1)"
+  },
+  "notifications": {
+    "title": "Уведомления"
+  },
+  "settings": {
+    "title": "Настройки",
+    "docs": "Документация",
+    "profile": {
+      "title": "Профиль",
+      "description": "Эти данные видят участники организации.",
+      "save": "Сохранить",
+      "saved": "Настройки сохранены.",
+      "success": "Готово",
+      "name": "Имя",
+      "nameHint": "Отображается в операциях и журнале аудита.",
+      "email": "Email",
+      "emailHint": "Используется для входа и уведомлений.",
+      "username": "Логин",
+      "usernameHint": "Уникальное имя для входа.",
+      "avatar": "Аватар",
+      "avatarHint": "JPG, GIF или PNG, до 1 МБ.",
+      "choose": "Выбрать",
+      "bio": "О себе",
+      "bioHint": "Короткое описание профиля."
+    },
+    "access": {
+      "title": "Доступ",
+      "description": "Пользователи и сервисные аккаунты организации и их роли (IAM).",
+      "grant": "Выдать доступ",
+      "search": "Поиск участников",
+      "user": "Пользователь",
+      "sa": "Сервисный аккаунт",
+      "edit": "Изменить",
+      "remove": "Отозвать доступ"
+    },
+    "notifications": {
+      "channels": "Каналы уведомлений",
+      "channelsHint": "Куда отправлять уведомления?",
+      "email": "Email",
+      "emailHint": "Ежедневная сводка на почту.",
+      "desktop": "В браузере",
+      "desktopHint": "Уведомления на рабочем столе.",
+      "updates": "Изменения в облаке",
+      "updatesHint": "О чём сообщать.",
+      "operations": "Завершение операций",
+      "operationsHint": "Когда длительная операция завершилась или упала.",
+      "quotas": "Квоты",
+      "quotasHint": "Когда использование подходит к лимиту квоты.",
+      "security": "Важные события безопасности",
+      "securityHint": "Новые ключи доступа, изменения ролей, вход с нового устройства."
+    },
+    "security": {
+      "password": "Пароль",
+      "passwordHint": "Подтвердите текущий пароль, прежде чем задать новый.",
+      "current": "Текущий пароль",
+      "new": "Новый пароль",
+      "min": "Не короче 12 символов",
+      "different": "Новый пароль должен отличаться",
+      "update": "Обновить",
+      "account": "Аккаунт",
+      "accountHint": "Удаление аккаунта необратимо: все связанные с ним данные будут удалены.",
+      "deleteAccount": "Удалить аккаунт"
+    }
+  },
+  "error": {
+    "title": "Страница не найдена",
+    "description": "Такой страницы нет."
+  }
+}
