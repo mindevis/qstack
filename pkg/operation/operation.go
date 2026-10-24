@@ -68,14 +68,32 @@ var ErrNotRunning = errors.New("operation: not found or already done")
 
 // Store reads operations from db and writes them in the caller's transaction.
 type Store struct {
-	db    DB
-	clock clock.Clock
-	ids   *ids.Generator
+	db       DB
+	clock    clock.Clock
+	ids      *ids.Generator
+	onCreate []CreateHook
+}
+
+// CreateHook runs in the transaction of Create, after the operation is
+// inserted; an error aborts Create. pkg/audit uses it to record the call
+// atomically with its effect.
+type CreateHook func(ctx context.Context, tx DB, op *operationv1.Operation) error
+
+// Option configures a Store.
+type Option func(*Store)
+
+// WithCreateHook adds a hook run by every Create.
+func WithCreateHook(h CreateHook) Option {
+	return func(s *Store) { s.onCreate = append(s.onCreate, h) }
 }
 
 // New returns a Store; db (usually the pool) serves reads.
-func New(db DB, clk clock.Clock, gen *ids.Generator) *Store {
-	return &Store{db: db, clock: clk, ids: gen}
+func New(db DB, clk clock.Clock, gen *ids.Generator, opts ...Option) *Store {
+	s := &Store{db: db, clock: clk, ids: gen}
+	for _, o := range opts {
+		o(s)
+	}
+	return s
 }
 
 // Spec describes a new operation.
@@ -154,7 +172,7 @@ func (s *Store) Create(ctx context.Context, tx DB, sp Spec) (*operationv1.Operat
 		}
 		return nil, apierr.ResourceBusy(sp.ResourceID, running)
 	}
-	return &operationv1.Operation{
+	op := &operationv1.Operation{
 		Id:          id,
 		Description: sp.Description,
 		CreateTime:  timestamppb.New(now),
@@ -163,7 +181,13 @@ func (s *Store) Create(ctx context.Context, tx DB, sp Spec) (*operationv1.Operat
 		Metadata:    meta,
 		ResourceId:  sp.ResourceID,
 		ProjectId:   sp.ProjectID,
-	}, nil
+	}
+	for _, h := range s.onCreate {
+		if err := h(ctx, tx, op); err != nil {
+			return nil, err
+		}
+	}
+	return op, nil
 }
 
 // Complete marks the operation done with response, the resource in its final
