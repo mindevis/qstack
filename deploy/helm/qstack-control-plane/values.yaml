@@ -42,6 +42,20 @@ openbao:
     requests: {cpu: 50m, memory: 64Mi}
     limits: {memory: 256Mi}
 
+# Web console (ADR-0017): Nuxt SSR + BFF, image <registry>/qs-console.
+console:
+  enabled: true
+  replicas: 1
+  # Public API for the BFF (qs-api-gateway); empty until the services exist.
+  apiGatewayUrl: ""
+  ingress:
+    enabled: false
+    className: ""
+    host: "" # empty: every host
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 512Mi}
+
 # L0 only: pods that act as compute nodes running qs-node (13 §1.1).
 fakeHosts:
   enabled: false

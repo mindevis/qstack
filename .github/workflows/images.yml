@@ -38,7 +38,8 @@ jobs:
         run: |
           sha=$(git rev-parse --short=12 HEAD)
           make image IMAGE_REPO="$REPO" VERSION="$sha"
-          for b in $(ls cmd); do
+          make console-image IMAGE_REPO="$REPO" VERSION="$sha"
+          for b in $(ls cmd) qs-console; do
             docker tag "$REPO/$b:$sha" "$REPO/$b:main"
             docker push -q "$REPO/$b:$sha"
             docker push -q "$REPO/$b:main"

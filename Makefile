@@ -160,6 +160,18 @@ image: ## Build OCI images (distroless, Debian 13): BIN=<binary> (default: all)
 			-t $(IMAGE_REPO)/$$b:$(VERSION) .; \
 	done
 
+##@ Web console (console/, ADR-0017)
+
+PNPM := npx -y pnpm@12.14.0
+
+.PHONY: console-build
+console-build: ## Install and build the console (Nuxt SSR) into console/.output
+	cd console && $(PNPM) install --frozen-lockfile && $(PNPM) typecheck && $(PNPM) build
+
+.PHONY: console-image
+console-image: ## Build the qs-console OCI image
+	$(OCI_BUILDER) build -t $(IMAGE_REPO)/qs-console:$(VERSION) --build-arg VERSION=$(VERSION) console
+
 ##@ Environments
 
 # L0 stand (spec 13 §1.1): needs kubectl access to L0_NAMESPACE and the
