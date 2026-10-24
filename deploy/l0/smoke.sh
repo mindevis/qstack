@@ -17,7 +17,7 @@ k run nats-check --rm -i --restart=Never --image=curlimages/curl:8.22.0 --quiet 
 echo "nats: ok (JetStream)"
 
 k run bao-check --rm -i --restart=Never --image=curlimages/curl:8.22.0 --quiet -- \
-	curl -fsS "http://$release-openbao:8200/v1/sys/health" | grep -q '"sealed":false'
+	curl -fsS "http://$release-openbao:8200/v1/sys/health" | grep '"sealed":false' >/dev/null
 echo "openbao: ok (dev, unsealed)"
 
 hosts=$(k get pods -l "app.kubernetes.io/instance=$release,app.kubernetes.io/name=fake-host" -o name)
