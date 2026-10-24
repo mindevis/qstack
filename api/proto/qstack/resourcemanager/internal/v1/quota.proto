@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+// Internal quota API of qs-resource-manager (spec 02 §12, 03 §5), used by
+// services through pkg/quota. Not exposed through the public gateway.
+package qstack.resourcemanager.internal.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+// QuotaService reserves project quota for an operation and later commits
+// or releases the reservation.
+service QuotaService {
+  // Reserve holds deltas for operation_id; idempotent for the same deltas.
+  // Exceeding a limit fails with RESOURCE_EXHAUSTED / QS_QUOTA_EXCEEDED.
+  rpc Reserve(ReserveRequest) returns (ReserveResponse);
+  // Commit turns the reservation into usage; idempotent.
+  rpc Commit(CommitRequest) returns (CommitResponse);
+  // Release drops the reservation; idempotent.
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+}
+
+// QuotaDelta changes one metric; negative amounts free usage (deletions)
+// and never fail.
+message QuotaDelta {
+  // Metric `<service>.<resource>.<measure>`, e.g. "compute.vcpus.total".
+  string metric = 1 [(buf.validate.field).string = {pattern: "^[a-z][a-zA-Z0-9]*[.][a-z][a-zA-Z0-9]*[.][a-z][a-zA-Z0-9]*$"}];
+  // Integer units of the metric (count, bytes, vCPUs).
+  int64 amount = 2;
+}
+
+message ReserveRequest {
+  string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+  string operation_id = 2 [(buf.validate.field).string.pattern = "^op-[0-9a-hjkmnp-tv-z]{26}$"];
+  repeated QuotaDelta deltas = 3 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 32
+  }];
+}
+
+message ReserveResponse {
+  // Unconfirmed reservations expire (1 hour).
+  google.protobuf.Timestamp expire_time = 1;
+}
+
+message CommitRequest {
+  string operation_id = 1 [(buf.validate.field).string.pattern = "^op-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message CommitResponse {}
+
+message ReleaseRequest {
+  string operation_id = 1 [(buf.validate.field).string.pattern = "^op-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ReleaseResponse {}
