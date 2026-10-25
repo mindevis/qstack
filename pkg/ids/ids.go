@@ -34,6 +34,7 @@ const (
 	APIKey                  Kind = "key"
 	AccessKey               Kind = "ak"
 	AuthorizedKey           Kind = "ajk"
+	Federation              Kind = "fed"
 	Operation               Kind = "op"
 	Host                    Kind = "hst"
 	RouteTable              Kind = "rt"
@@ -68,6 +69,7 @@ var kindNames = map[Kind]string{
 	APIKey:                  "API key",
 	AccessKey:               "access key",
 	AuthorizedKey:           "authorized key",
+	Federation:              "federation",
 	Operation:               "operation",
 	Host:                    "host",
 	RouteTable:              "route table",

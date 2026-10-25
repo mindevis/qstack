@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// AccessKey is an S3 credential (AWS SigV4) of a service account or a user
+// (spec 03 §2, 07). The secret is encrypted with OpenBao Transit
+// (REQ-IAM-023).
+message AccessKey {
+  // `ak-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // AWS-style access key ID, `QS` + 18 characters.
+  string key_id = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  oneof owner {
+    string service_account_id = 3 [(google.api.field_behavior) = IMMUTABLE];
+    string user_id = 4 [(google.api.field_behavior) = IMMUTABLE];
+  }
+  string description = 5;
+  Status status = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp last_used_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+    STATUS_INACTIVE = 2;
+  }
+}
+
+// AccessKeyService manages S3 access keys.
+service AccessKeyService {
+  // Returns an access key (never the secret).
+  rpc GetAccessKey(GetAccessKeyRequest) returns (AccessKey) {
+    option (google.api.http) = {get: "/iam/v1/accessKeys/{access_key_id}"};
+    option (qstack.api.permission) = "iam.accessKeys.get";
+  }
+
+  // Lists the access keys of a service account or a user.
+  rpc ListAccessKeys(ListAccessKeysRequest) returns (ListAccessKeysResponse) {
+    option (google.api.http) = {get: "/iam/v1/accessKeys"};
+    option (qstack.api.permission) = "iam.accessKeys.list";
+  }
+
+  // Creates an access key. The operation response, CreateAccessKeyResponse,
+  // holds the secret; it is returned once.
+  rpc CreateAccessKey(CreateAccessKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/accessKeys"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.accessKeys.create";
+  }
+
+  // Deletes an access key.
+  rpc DeleteAccessKey(DeleteAccessKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/iam/v1/accessKeys/{access_key_id}"};
+    option (qstack.api.permission) = "iam.accessKeys.delete";
+  }
+
+  // Deactivates an access key without deleting it.
+  rpc DeactivateAccessKey(DeactivateAccessKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/accessKeys/{access_key_id}:deactivate"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.accessKeys.deactivate";
+  }
+}
+
+message GetAccessKeyRequest {
+  string access_key_id = 1 [(buf.validate.field).string.pattern = "^ak-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListAccessKeysRequest {
+  oneof owner {
+    option (buf.validate.oneof).required = true;
+    string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+    string user_id = 2 [(buf.validate.field).string.pattern = "^usr-[0-9a-hjkmnp-tv-z]{26}$"];
+  }
+  // Default 100, maximum 1000.
+  int32 page_size = 3 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 4 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListAccessKeysResponse {
+  repeated AccessKey access_keys = 1;
+  string next_page_token = 2;
+}
+
+message CreateAccessKeyRequest {
+  oneof owner {
+    option (buf.validate.oneof).required = true;
+    string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+    string user_id = 2 [(buf.validate.field).string.pattern = "^usr-[0-9a-hjkmnp-tv-z]{26}$"];
+  }
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+}
+
+message CreateAccessKeyMetadata {
+  string access_key_id = 1;
+}
+
+// CreateAccessKeyResponse is the response of the create operation.
+message CreateAccessKeyResponse {
+  AccessKey access_key = 1;
+  // Secret access key: shown once.
+  string secret = 2 [(qstack.api.sensitive) = true];
+}
+
+message DeleteAccessKeyRequest {
+  string access_key_id = 1 [(buf.validate.field).string.pattern = "^ak-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message DeleteAccessKeyMetadata {
+  string access_key_id = 1;
+}
+
+message DeactivateAccessKeyRequest {
+  string access_key_id = 1 [(buf.validate.field).string.pattern = "^ak-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message DeactivateAccessKeyMetadata {
+  string access_key_id = 1;
+}

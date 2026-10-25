@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// AuthorizedKey is the public key a service account signs JWTs with to
+// obtain IAM tokens (spec 03 §3.1).
+message AuthorizedKey {
+  // `ajk-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string service_account_id = 2 [(google.api.field_behavior) = IMMUTABLE];
+  string description = 3;
+  Algorithm algorithm = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // PEM-encoded public key.
+  string public_key = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+enum Algorithm {
+  ALGORITHM_UNSPECIFIED = 0;
+  ALGORITHM_ED25519 = 1;
+  ALGORITHM_RSA_2048 = 2;
+  ALGORITHM_RSA_4096 = 3;
+}
+
+// AuthorizedKeyService manages the authorized keys of service accounts.
+service AuthorizedKeyService {
+  // Returns an authorized key.
+  rpc GetAuthorizedKey(GetAuthorizedKeyRequest) returns (AuthorizedKey) {
+    option (google.api.http) = {get: "/iam/v1/authorizedKeys/{authorized_key_id}"};
+    option (qstack.api.permission) = "iam.authorizedKeys.get";
+  }
+
+  // Lists the authorized keys of a service account.
+  rpc ListAuthorizedKeys(ListAuthorizedKeysRequest) returns (ListAuthorizedKeysResponse) {
+    option (google.api.http) = {get: "/iam/v1/authorizedKeys"};
+    option (qstack.api.permission) = "iam.authorizedKeys.list";
+  }
+
+  // Creates an authorized key: uploads a public key, or generates a key
+  // pair whose private key is in the operation response, shown once.
+  rpc CreateAuthorizedKey(CreateAuthorizedKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/authorizedKeys"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.authorizedKeys.create";
+  }
+
+  // Deletes an authorized key.
+  rpc DeleteAuthorizedKey(DeleteAuthorizedKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/iam/v1/authorizedKeys/{authorized_key_id}"};
+    option (qstack.api.permission) = "iam.authorizedKeys.delete";
+  }
+}
+
+message GetAuthorizedKeyRequest {
+  string authorized_key_id = 1 [(buf.validate.field).string.pattern = "^ajk-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListAuthorizedKeysRequest {
+  string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListAuthorizedKeysResponse {
+  repeated AuthorizedKey authorized_keys = 1;
+  string next_page_token = 2;
+}
+
+message CreateAuthorizedKeyRequest {
+  string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+  oneof key {
+    option (buf.validate.oneof).required = true;
+    // Upload a PEM-encoded Ed25519 or RSA (>= 2048 bits) public key.
+    string public_key = 3 [(buf.validate.field).string.max_len = 16384];
+    // Generate a key pair with this algorithm on the server.
+    Algorithm generate = 4 [(buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }];
+  }
+}
+
+message CreateAuthorizedKeyMetadata {
+  string authorized_key_id = 1;
+}
+
+// CreateAuthorizedKeyResponse is the response of the create operation.
+message CreateAuthorizedKeyResponse {
+  AuthorizedKey authorized_key = 1;
+  // PEM-encoded private key of a generated pair: shown once, never stored.
+  // Empty when a public key was uploaded.
+  string private_key = 2 [(qstack.api.sensitive) = true];
+}
+
+message DeleteAuthorizedKeyRequest {
+  string authorized_key_id = 1 [(buf.validate.field).string.pattern = "^ajk-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message DeleteAuthorizedKeyMetadata {
+  string authorized_key_id = 1;
+}

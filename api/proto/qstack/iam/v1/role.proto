@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "qstack/api/annotations.proto";
+
+// Role is a predefined set of permissions (spec 03 §2). Roles come from
+// the catalog in the repository; custom roles do not exist in the MVP.
+message Role {
+  // Role ID, e.g. `editor`, `compute.viewer`, `vpc.user`.
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  // Permissions `<service>.<resource>.<verb>`.
+  repeated string permissions = 4;
+  Stage stage = 5;
+
+  enum Stage {
+    STAGE_UNSPECIFIED = 0;
+    STAGE_GA = 1;
+    STAGE_BETA = 2;
+  }
+}
+
+// RoleService reads the role catalog.
+service RoleService {
+  // Returns a role.
+  rpc GetRole(GetRoleRequest) returns (Role) {
+    option (google.api.http) = {get: "/iam/v1/roles/{role_id}"};
+    option (qstack.api.permission) = "iam.roles.get";
+  }
+
+  // Lists the roles.
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse) {
+    option (google.api.http) = {get: "/iam/v1/roles"};
+    option (qstack.api.permission) = "iam.roles.list";
+  }
+}
+
+message GetRoleRequest {
+  string role_id = 1 [(buf.validate.field).string = {pattern: "^[a-z][a-zA-Z0-9.-]{0,99}$"}];
+}
+
+message ListRolesRequest {
+  // Default 100, maximum 1000.
+  int32 page_size = 1 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 2 [(buf.validate.field).string.max_len = 2048];
+  // Filter on `id`, `stage`.
+  string filter = 3 [(buf.validate.field).string.max_len = 1024];
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  string next_page_token = 2;
+}

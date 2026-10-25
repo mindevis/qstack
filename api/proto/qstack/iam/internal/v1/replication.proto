@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package qstack.iam.internal.v1;
+
+import "qstack/access/v1/access.proto";
+
+// ReplicationService feeds the regional qs-authz-cache (REQ-IAM-010): a
+// full snapshot of what authorization needs, after which the cache follows
+// the qs.global.iam.> events from the snapshot's position.
+service ReplicationService {
+  // Streams the snapshot; the last message carries the event sequence to
+  // continue from.
+  rpc Snapshot(SnapshotRequest) returns (stream SnapshotResponse);
+}
+
+message SnapshotRequest {}
+
+// SnapshotResponse is one record of the snapshot.
+message SnapshotResponse {
+  oneof record {
+    RoleRecord role = 1;
+    BindingRecord binding = 2;
+    GroupMembershipRecord group_membership = 3;
+    ProjectRecord project = 4;
+    // Last message: the snapshot is complete at this NATS stream sequence.
+    uint64 end_sequence = 5;
+  }
+}
+
+message RoleRecord {
+  string role_id = 1;
+  repeated string permissions = 2;
+}
+
+message BindingRecord {
+  // Resource holding the binding: `org-…`, `prj-…`, `sa-…`.
+  string resource_id = 1;
+  qstack.access.v1.AccessBinding binding = 2;
+}
+
+message GroupMembershipRecord {
+  string group_id = 1;
+  string subject_id = 2;
+}
+
+// ProjectRecord places a project in the hierarchy.
+message ProjectRecord {
+  string project_id = 1;
+  string organization_id = 2;
+}

@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+// Access bindings shared by every resource that holds them: organizations,
+// projects and service accounts (spec 03 §2, §4.1).
+package qstack.access.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+// Subject is who a binding grants a role to.
+message Subject {
+  // Subject ID: `usr-…`, `sa-…`, `grp-…`, or `allAuthenticatedUsers` for
+  // TYPE_SYSTEM.
+  string id = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 64
+  }];
+  Type type = 2 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_USER_ACCOUNT = 1;
+    TYPE_SERVICE_ACCOUNT = 2;
+    TYPE_GROUP = 3;
+    // System subjects; only `allAuthenticatedUsers` exists.
+    TYPE_SYSTEM = 4;
+  }
+}
+
+// AccessBinding grants a role to a subject on the resource that holds it.
+message AccessBinding {
+  // Role ID, e.g. `editor` or `compute.viewer`.
+  string role_id = 1 [(buf.validate.field).string = {pattern: "^[a-z][a-zA-Z0-9.-]{0,99}$"}];
+  Subject subject = 2 [(buf.validate.field).required = true];
+  // Binding ID, `bnd-<ulid>`.
+  string id = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// AccessBindingDelta adds or removes one binding.
+message AccessBindingDelta {
+  Action action = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  AccessBinding access_binding = 2 [(buf.validate.field).required = true];
+
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_ADD = 1;
+    ACTION_REMOVE = 2;
+  }
+}
+
+message ListAccessBindingsRequest {
+  // ID of the resource holding the bindings (`org-…`, `prj-…`, `sa-…`).
+  string resource_id = 1 [(buf.validate.field).string.pattern = "^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListAccessBindingsResponse {
+  repeated AccessBinding access_bindings = 1;
+  // Empty when there are no more results.
+  string next_page_token = 2;
+}
+
+// SetAccessBindingsRequest replaces all bindings of the resource.
+message SetAccessBindingsRequest {
+  string resource_id = 1 [(buf.validate.field).string.pattern = "^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{26}$"];
+  repeated AccessBinding access_bindings = 2 [(buf.validate.field).repeated.max_items = 1000];
+  // Etag of the binding set read before; a mismatch fails with ABORTED.
+  string etag = 3 [(buf.validate.field).string.min_len = 1];
+}
+
+message SetAccessBindingsMetadata {
+  string resource_id = 1;
+}
+
+// UpdateAccessBindingsRequest applies deltas to the bindings of the resource.
+message UpdateAccessBindingsRequest {
+  string resource_id = 1 [(buf.validate.field).string.pattern = "^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{26}$"];
+  repeated AccessBindingDelta access_binding_deltas = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 1000
+  }];
+}
+
+message UpdateAccessBindingsMetadata {
+  string resource_id = 1;
+}

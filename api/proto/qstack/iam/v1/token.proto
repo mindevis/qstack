@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+
+// TokenService exchanges credentials for IAM tokens (spec 03 §3.2): JWT,
+// EdDSA, TTL 1 h for service accounts, 12 h for console users.
+service TokenService {
+  // Issues an IAM token. Callable without a token: the method is in the
+  // authz public allowlist; the credential in the request authenticates.
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse) {
+    option (google.api.http) = {
+      post: "/iam/v1/tokens"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.tokens.create";
+  }
+}
+
+message CreateTokenRequest {
+  oneof credential {
+    option (buf.validate.oneof).required = true;
+    // JWT signed by an authorized key of a service account
+    // (`kid` = authorized key ID, `aud` = token endpoint).
+    string jwt = 1 [
+      (buf.validate.field).string.max_len = 8192,
+      (qstack.api.sensitive) = true
+    ];
+    // Refresh token of a user session (CLI, console); rotated on use.
+    string refresh_token = 2 [
+      (buf.validate.field).string.max_len = 1024,
+      (qstack.api.sensitive) = true
+    ];
+  }
+}
+
+message CreateTokenResponse {
+  string iam_token = 1 [(qstack.api.sensitive) = true];
+  google.protobuf.Timestamp expire_time = 2;
+  // New refresh token when one was exchanged (rotation); empty otherwise.
+  string refresh_token = 3 [(qstack.api.sensitive) = true];
+}

@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// Federation connects the external OIDC identity provider of an
+// organization (spec 03 §3.1). The client secret is kept in OpenBao and
+// never returned.
+message Federation {
+  // `fed-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string organization_id = 2 [(google.api.field_behavior) = IMMUTABLE];
+  string name = 3;
+  string description = 4;
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // OIDC issuer URL.
+  string issuer = 10;
+  string client_id = 11;
+  ClaimMappings claim_mappings = 12;
+  // Create users on their first sign-in instead of requiring an invitation.
+  bool auto_create_users = 13;
+}
+
+// ClaimMappings names the ID-token claims used for user attributes.
+message ClaimMappings {
+  // Default `email`.
+  string email = 1 [(buf.validate.field).string.max_len = 100];
+  // Default `name`.
+  string display_name = 2 [(buf.validate.field).string.max_len = 100];
+}
+
+// FederationService manages OIDC federations of organizations.
+service FederationService {
+  // Returns a federation.
+  rpc GetFederation(GetFederationRequest) returns (Federation) {
+    option (google.api.http) = {get: "/iam/v1/federations/{federation_id}"};
+    option (qstack.api.permission) = "iam.federations.get";
+  }
+
+  // Lists the federations of an organization.
+  rpc ListFederations(ListFederationsRequest) returns (ListFederationsResponse) {
+    option (google.api.http) = {get: "/iam/v1/federations"};
+    option (qstack.api.permission) = "iam.federations.list";
+  }
+
+  // Creates a federation.
+  rpc CreateFederation(CreateFederationRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/federations"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.federations.create";
+  }
+
+  // Updates a federation.
+  rpc UpdateFederation(UpdateFederationRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      patch: "/iam/v1/federations/{federation_id}"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.federations.update";
+  }
+
+  // Deletes a federation; its users can no longer sign in.
+  rpc DeleteFederation(DeleteFederationRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/iam/v1/federations/{federation_id}"};
+    option (qstack.api.permission) = "iam.federations.delete";
+  }
+}
+
+message GetFederationRequest {
+  string federation_id = 1 [(buf.validate.field).string.pattern = "^fed-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListFederationsRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListFederationsResponse {
+  repeated Federation federations = 1;
+  string next_page_token = 2;
+}
+
+message CreateFederationRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  string name = 2 [(buf.validate.field).string.pattern = "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"];
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+  string issuer = 4 [(buf.validate.field).string = {
+    uri: true
+    prefix: "https://"
+    max_len: 1024
+  }];
+  string client_id = 5 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  // Stored in OpenBao; never returned.
+  string client_secret = 6 [
+    (buf.validate.field).string = {
+      min_len: 1
+      max_len: 1024
+    },
+    (qstack.api.sensitive) = true
+  ];
+  ClaimMappings claim_mappings = 7;
+  bool auto_create_users = 8;
+}
+
+message CreateFederationMetadata {
+  string federation_id = 1;
+}
+
+message UpdateFederationRequest {
+  string federation_id = 1 [(buf.validate.field).string.pattern = "^fed-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Fields to update; empty is INVALID_ARGUMENT (REQ-PLT-030).
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).required = true];
+  string name = 3 [(buf.validate.field).string.pattern = "^([a-z]([a-z0-9-]{0,61}[a-z0-9])?)?$"];
+  string description = 4 [(buf.validate.field).string.max_len = 256];
+  string issuer = 5 [(buf.validate.field).string.max_len = 1024];
+  string client_id = 6 [(buf.validate.field).string.max_len = 256];
+  string client_secret = 7 [
+    (buf.validate.field).string.max_len = 1024,
+    (qstack.api.sensitive) = true
+  ];
+  ClaimMappings claim_mappings = 8;
+  bool auto_create_users = 9;
+  string etag = 10;
+}
+
+message UpdateFederationMetadata {
+  string federation_id = 1;
+}
+
+message DeleteFederationRequest {
+  string federation_id = 1 [(buf.validate.field).string.pattern = "^fed-[0-9a-hjkmnp-tv-z]{26}$"];
+  string etag = 2;
+}
+
+message DeleteFederationMetadata {
+  string federation_id = 1;
+}
