@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+// Resource Manager: organizations and projects (spec 03 §2). Global service.
+package qstack.resourcemanager.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/access/v1/access.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// Organization is the top of the resource hierarchy: it owns projects,
+// users' memberships, groups, federations and the billing account.
+// Organizations are created by sign-up (spec 03 §7), not by this API.
+message Organization {
+  reserved 2;
+  reserved "project_id";
+
+  // `org-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Unique name, `^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`.
+  string name = 3 [(google.api.field_behavior) = IMMUTABLE];
+  string description = 4;
+  map<string, string> labels = 5;
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Status status = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Name shown in the console.
+  string display_name = 10;
+  string owner_user_id = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string billing_account_id = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+  OrganizationSettings settings = 13;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    // Waiting for platform approval (sign-up mode `approval`): no resources.
+    STATUS_PENDING_APPROVAL = 1;
+    STATUS_ACTIVE = 2;
+    STATUS_REJECTED = 3;
+    STATUS_SUSPENDED = 4;
+    STATUS_DELETING = 5;
+  }
+}
+
+message OrganizationSettings {
+  // Infrastructure-as-code tool of the console snippets (spec 10 §3.1);
+  // unspecified means the installation default.
+  IacTool iac_tool = 1;
+
+  enum IacTool {
+    IAC_TOOL_UNSPECIFIED = 0;
+    IAC_TOOL_OPENTOFU = 1;
+    IAC_TOOL_TERRAFORM = 2;
+  }
+}
+
+// OrganizationService reads and updates organizations and their access.
+service OrganizationService {
+  // Returns an organization.
+  rpc GetOrganization(GetOrganizationRequest) returns (Organization) {
+    option (google.api.http) = {get: "/resourcemanager/v1/organizations/{organization_id}"};
+    option (qstack.api.permission) = "resourcemanager.organizations.get";
+  }
+
+  // Lists the organizations the caller can see.
+  rpc ListOrganizations(ListOrganizationsRequest) returns (ListOrganizationsResponse) {
+    option (google.api.http) = {get: "/resourcemanager/v1/organizations"};
+    option (qstack.api.permission) = "resourcemanager.organizations.list";
+  }
+
+  // Updates an organization.
+  rpc UpdateOrganization(UpdateOrganizationRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      patch: "/resourcemanager/v1/organizations/{organization_id}"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.organizations.update";
+  }
+
+  // Lists the access bindings of an organization.
+  rpc ListAccessBindings(qstack.access.v1.ListAccessBindingsRequest) returns (qstack.access.v1.ListAccessBindingsResponse) {
+    option (google.api.http) = {get: "/resourcemanager/v1/organizations/{resource_id}:listAccessBindings"};
+    option (qstack.api.permission) = "resourcemanager.organizations.listAccessBindings";
+  }
+
+  // Replaces all access bindings of an organization (with etag).
+  rpc SetAccessBindings(qstack.access.v1.SetAccessBindingsRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/resourcemanager/v1/organizations/{resource_id}:setAccessBindings"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.organizations.setAccessBindings";
+  }
+
+  // Adds and removes access bindings of an organization.
+  rpc UpdateAccessBindings(qstack.access.v1.UpdateAccessBindingsRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/resourcemanager/v1/organizations/{resource_id}:updateAccessBindings"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.organizations.updateAccessBindings";
+  }
+}
+
+message GetOrganizationRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListOrganizationsRequest {
+  // Default 100, maximum 1000.
+  int32 page_size = 1 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 2 [(buf.validate.field).string.max_len = 2048];
+  // Filter on `name`, `status`, `labels.<key>`.
+  string filter = 3 [(buf.validate.field).string.max_len = 1024];
+}
+
+message ListOrganizationsResponse {
+  repeated Organization organizations = 1;
+  string next_page_token = 2;
+}
+
+message UpdateOrganizationRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Fields to update; empty is INVALID_ARGUMENT (REQ-PLT-030).
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).required = true];
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+  map<string, string> labels = 4 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {
+      string: {pattern: "^[a-z][a-z0-9_./-]{0,62}$"}
+    }
+    values: {
+      string: {max_len: 63}
+    }
+  }];
+  string display_name = 5 [(buf.validate.field).string.max_len = 100];
+  OrganizationSettings settings = 6 [(buf.validate.field).cel = {
+    id: "iac_tool.defined"
+    message: "unknown iac_tool"
+    expression: "this.iac_tool in [0, 1, 2]"
+  }];
+  // Expected etag; a mismatch fails with ABORTED (REQ-PLT-022).
+  string etag = 7;
+}
+
+message UpdateOrganizationMetadata {
+  string organization_id = 1;
+}

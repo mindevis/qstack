@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+package qstack.resourcemanager.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/access/v1/access.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// Project groups resources of an organization; quotas, billing and most
+// access bindings apply per project (spec 03 §2).
+message Project {
+  // `prj-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Organization the project belongs to, `org-<ulid>`.
+  string organization_id = 2 [(google.api.field_behavior) = IMMUTABLE];
+  // Unique within the organization, `^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$`.
+  string name = 3;
+  string description = 4;
+  map<string, string> labels = 5;
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+  Status status = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_ACTIVE = 1;
+    STATUS_SUSPENDED = 2;
+    STATUS_DELETING = 3;
+    STATUS_DELETED = 4;
+  }
+}
+
+// Quota of one metric of a project (spec 03 §5): integer units.
+message Quota {
+  // Metric, e.g. `compute.vcpus.total`.
+  string metric = 1;
+  int64 limit = 2;
+  int64 used = 3;
+  // Held by unconfirmed reservations.
+  int64 reserved = 4;
+}
+
+// ProjectService manages projects, their access and quotas.
+service ProjectService {
+  // Returns a project.
+  rpc GetProject(GetProjectRequest) returns (Project) {
+    option (google.api.http) = {get: "/resourcemanager/v1/projects/{project_id}"};
+    option (qstack.api.permission) = "resourcemanager.projects.get";
+  }
+
+  // Lists the projects of an organization.
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse) {
+    option (google.api.http) = {get: "/resourcemanager/v1/projects"};
+    option (qstack.api.permission) = "resourcemanager.projects.list";
+  }
+
+  // Creates a project in an organization.
+  rpc CreateProject(CreateProjectRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/resourcemanager/v1/projects"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.projects.create";
+  }
+
+  // Updates a project.
+  rpc UpdateProject(UpdateProjectRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      patch: "/resourcemanager/v1/projects/{project_id}"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.projects.update";
+  }
+
+  // Deletes a project; it must hold no resources (MVP).
+  rpc DeleteProject(DeleteProjectRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/resourcemanager/v1/projects/{project_id}"};
+    option (qstack.api.permission) = "resourcemanager.projects.delete";
+  }
+
+  // Lists the access bindings of a project.
+  rpc ListAccessBindings(qstack.access.v1.ListAccessBindingsRequest) returns (qstack.access.v1.ListAccessBindingsResponse) {
+    option (google.api.http) = {get: "/resourcemanager/v1/projects/{resource_id}:listAccessBindings"};
+    option (qstack.api.permission) = "resourcemanager.projects.listAccessBindings";
+  }
+
+  // Adds and removes access bindings of a project.
+  rpc UpdateAccessBindings(qstack.access.v1.UpdateAccessBindingsRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/resourcemanager/v1/projects/{resource_id}:updateAccessBindings"
+      body: "*"
+    };
+    option (qstack.api.permission) = "resourcemanager.projects.updateAccessBindings";
+  }
+
+  // Returns the quotas of a project with current usage.
+  rpc GetQuotas(GetQuotasRequest) returns (GetQuotasResponse) {
+    option (google.api.http) = {get: "/resourcemanager/v1/projects/{project_id}/quotas"};
+    option (qstack.api.permission) = "resourcemanager.projects.getQuotas";
+  }
+}
+
+message GetProjectRequest {
+  string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListProjectsRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+  // Filter on `name`, `status`, `labels.<key>`.
+  string filter = 4 [(buf.validate.field).string.max_len = 1024];
+  // Order, e.g. `name` or `create_time desc`; default `create_time`.
+  string order_by = 5 [(buf.validate.field).string.max_len = 256];
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+}
+
+message CreateProjectRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  string name = 2 [(buf.validate.field).string.pattern = "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"];
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+  map<string, string> labels = 4 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {
+      string: {pattern: "^[a-z][a-z0-9_./-]{0,62}$"}
+    }
+    values: {
+      string: {max_len: 63}
+    }
+  }];
+}
+
+message CreateProjectMetadata {
+  string project_id = 1;
+}
+
+message UpdateProjectRequest {
+  string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Fields to update; empty is INVALID_ARGUMENT (REQ-PLT-030).
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).required = true];
+  string name = 3 [(buf.validate.field).string.pattern = "^([a-z]([a-z0-9-]{0,61}[a-z0-9])?)?$"];
+  string description = 4 [(buf.validate.field).string.max_len = 256];
+  map<string, string> labels = 5 [(buf.validate.field).map = {
+    max_pairs: 64
+    keys: {
+      string: {pattern: "^[a-z][a-z0-9_./-]{0,62}$"}
+    }
+    values: {
+      string: {max_len: 63}
+    }
+  }];
+  // Expected etag; a mismatch fails with ABORTED (REQ-PLT-022).
+  string etag = 6;
+}
+
+message UpdateProjectMetadata {
+  string project_id = 1;
+}
+
+message DeleteProjectRequest {
+  string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Expected etag; a mismatch fails with ABORTED (REQ-PLT-022).
+  string etag = 2;
+}
+
+message DeleteProjectMetadata {
+  string project_id = 1;
+}
+
+message GetQuotasRequest {
+  string project_id = 1 [(buf.validate.field).string.pattern = "^prj-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message GetQuotasResponse {
+  repeated Quota quotas = 1;
+}

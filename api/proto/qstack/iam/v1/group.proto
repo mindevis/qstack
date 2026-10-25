@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// Group collects users and service accounts of an organization so that
+// roles can be granted to all of them at once.
+message Group {
+  // `grp-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string organization_id = 2 [(google.api.field_behavior) = IMMUTABLE];
+  string name = 3;
+  string description = 4;
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string etag = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// GroupMember is a user or a service account in a group.
+message GroupMember {
+  // `usr-…` or `sa-…`.
+  string subject_id = 1 [(buf.validate.field).string.pattern = "^(usr|sa)-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+// GroupMemberDelta adds or removes one member.
+message GroupMemberDelta {
+  Action action = 1 [(buf.validate.field).enum = {
+    defined_only: true
+    not_in: [0]
+  }];
+  GroupMember member = 2 [(buf.validate.field).required = true];
+
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_ADD = 1;
+    ACTION_REMOVE = 2;
+  }
+}
+
+// GroupService manages groups and their members.
+service GroupService {
+  // Returns a group.
+  rpc GetGroup(GetGroupRequest) returns (Group) {
+    option (google.api.http) = {get: "/iam/v1/groups/{group_id}"};
+    option (qstack.api.permission) = "iam.groups.get";
+  }
+
+  // Lists the groups of an organization.
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse) {
+    option (google.api.http) = {get: "/iam/v1/groups"};
+    option (qstack.api.permission) = "iam.groups.list";
+  }
+
+  // Creates a group.
+  rpc CreateGroup(CreateGroupRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/groups"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.groups.create";
+  }
+
+  // Updates a group.
+  rpc UpdateGroup(UpdateGroupRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      patch: "/iam/v1/groups/{group_id}"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.groups.update";
+  }
+
+  // Deletes a group; its access bindings are removed.
+  rpc DeleteGroup(DeleteGroupRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/iam/v1/groups/{group_id}"};
+    option (qstack.api.permission) = "iam.groups.delete";
+  }
+
+  // Lists the members of a group.
+  rpc ListMembers(ListMembersRequest) returns (ListMembersResponse) {
+    option (google.api.http) = {get: "/iam/v1/groups/{group_id}:listMembers"};
+    option (qstack.api.permission) = "iam.groups.get";
+  }
+
+  // Adds and removes members of a group.
+  rpc UpdateMembers(UpdateMembersRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/groups/{group_id}:updateMembers"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.groups.updateMembers";
+  }
+}
+
+message GetGroupRequest {
+  string group_id = 1 [(buf.validate.field).string.pattern = "^grp-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListGroupsRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+  // Filter on `name`.
+  string filter = 4 [(buf.validate.field).string.max_len = 1024];
+}
+
+message ListGroupsResponse {
+  repeated Group groups = 1;
+  string next_page_token = 2;
+}
+
+message CreateGroupRequest {
+  string organization_id = 1 [(buf.validate.field).string.pattern = "^org-[0-9a-hjkmnp-tv-z]{26}$"];
+  string name = 2 [(buf.validate.field).string.pattern = "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"];
+  string description = 3 [(buf.validate.field).string.max_len = 256];
+}
+
+message CreateGroupMetadata {
+  string group_id = 1;
+}
+
+message UpdateGroupRequest {
+  string group_id = 1 [(buf.validate.field).string.pattern = "^grp-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Fields to update; empty is INVALID_ARGUMENT (REQ-PLT-030).
+  google.protobuf.FieldMask update_mask = 2 [(buf.validate.field).required = true];
+  string name = 3 [(buf.validate.field).string.pattern = "^([a-z]([a-z0-9-]{0,61}[a-z0-9])?)?$"];
+  string description = 4 [(buf.validate.field).string.max_len = 256];
+  string etag = 5;
+}
+
+message UpdateGroupMetadata {
+  string group_id = 1;
+}
+
+message DeleteGroupRequest {
+  string group_id = 1 [(buf.validate.field).string.pattern = "^grp-[0-9a-hjkmnp-tv-z]{26}$"];
+  string etag = 2;
+}
+
+message DeleteGroupMetadata {
+  string group_id = 1;
+}
+
+message ListMembersRequest {
+  string group_id = 1 [(buf.validate.field).string.pattern = "^grp-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListMembersResponse {
+  repeated GroupMember members = 1;
+  string next_page_token = 2;
+}
+
+message UpdateMembersRequest {
+  string group_id = 1 [(buf.validate.field).string.pattern = "^grp-[0-9a-hjkmnp-tv-z]{26}$"];
+  repeated GroupMemberDelta member_deltas = 2 [(buf.validate.field).repeated = {
+    min_items: 1
+    max_items: 1000
+  }];
+}
+
+message UpdateMembersMetadata {
+  string group_id = 1;
+}

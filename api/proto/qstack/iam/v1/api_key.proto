@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package qstack.iam.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "qstack/api/annotations.proto";
+import "qstack/operation/v1/operation.proto";
+
+// ApiKey lets a service account call the API with
+// `Authorization: Api-Key <key>`, limited to scopes (spec 03 §3.3). Only a
+// SHA-256 hash of the key is stored.
+message ApiKey {
+  // `key-<ulid>`.
+  string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string service_account_id = 2 [(google.api.field_behavior) = IMMUTABLE];
+  string description = 3;
+  // Permissions the key may use, e.g. `objectstore.*`, `compute.instances.get`;
+  // effective rights are their intersection with the roles of the account.
+  repeated string scopes = 4;
+  // Empty: the key does not expire.
+  google.protobuf.Timestamp expire_time = 5;
+  google.protobuf.Timestamp last_used_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // First characters of the key, `qsk_xxxx`, to recognise it.
+  string prefix = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// ApiKeyService manages API keys of service accounts.
+service ApiKeyService {
+  // Returns an API key (never the secret).
+  rpc GetApiKey(GetApiKeyRequest) returns (ApiKey) {
+    option (google.api.http) = {get: "/iam/v1/apiKeys/{api_key_id}"};
+    option (qstack.api.permission) = "iam.apiKeys.get";
+  }
+
+  // Lists the API keys of a service account.
+  rpc ListApiKeys(ListApiKeysRequest) returns (ListApiKeysResponse) {
+    option (google.api.http) = {get: "/iam/v1/apiKeys"};
+    option (qstack.api.permission) = "iam.apiKeys.list";
+  }
+
+  // Creates an API key. The operation response, CreateApiKeyResponse, holds
+  // the secret; it is returned once and never stored.
+  rpc CreateApiKey(CreateApiKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {
+      post: "/iam/v1/apiKeys"
+      body: "*"
+    };
+    option (qstack.api.permission) = "iam.apiKeys.create";
+  }
+
+  // Deletes an API key; it stops working within 10 s.
+  rpc DeleteApiKey(DeleteApiKeyRequest) returns (qstack.operation.v1.Operation) {
+    option (google.api.http) = {delete: "/iam/v1/apiKeys/{api_key_id}"};
+    option (qstack.api.permission) = "iam.apiKeys.delete";
+  }
+}
+
+message GetApiKeyRequest {
+  string api_key_id = 1 [(buf.validate.field).string.pattern = "^key-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message ListApiKeysRequest {
+  string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+  // Default 100, maximum 1000.
+  int32 page_size = 2 [(buf.validate.field).int32 = {
+    gte: 0
+    lte: 1000
+  }];
+  string page_token = 3 [(buf.validate.field).string.max_len = 2048];
+}
+
+message ListApiKeysResponse {
+  repeated ApiKey api_keys = 1;
+  string next_page_token = 2;
+}
+
+message CreateApiKeyRequest {
+  string service_account_id = 1 [(buf.validate.field).string.pattern = "^sa-[0-9a-hjkmnp-tv-z]{26}$"];
+  string description = 2 [(buf.validate.field).string.max_len = 256];
+  repeated string scopes = 3 [(buf.validate.field).repeated = {
+    max_items: 100
+    items: {
+      string: {pattern: "^[a-z][a-zA-Z0-9]*([.][a-z*][a-zA-Z0-9]*){0,2}([.][*])?$"}
+    }
+  }];
+  google.protobuf.Timestamp expire_time = 4;
+}
+
+message CreateApiKeyMetadata {
+  string api_key_id = 1;
+}
+
+// CreateApiKeyResponse is the response of the create operation.
+message CreateApiKeyResponse {
+  ApiKey api_key = 1;
+  // The key, `qsk_<base62 40>`: shown once.
+  string secret = 2 [(qstack.api.sensitive) = true];
+}
+
+message DeleteApiKeyRequest {
+  string api_key_id = 1 [(buf.validate.field).string.pattern = "^key-[0-9a-hjkmnp-tv-z]{26}$"];
+}
+
+message DeleteApiKeyMetadata {
+  string api_key_id = 1;
+}
