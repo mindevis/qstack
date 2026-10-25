@@ -18,6 +18,9 @@ deployments:
       valuesFiles:
         - ./deploy/helm/qstack-control-plane/values-dev.yaml
       values:
+        # The stand follows main: the mutable `main` tag must be re-pulled.
+        images:
+          pullPolicy: Always
         # The stand's ingress controller is Traefik (console at http://<node>/).
         console:
           ingress:
