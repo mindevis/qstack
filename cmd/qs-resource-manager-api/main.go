@@ -33,6 +33,7 @@ import (
 	"github.com/mindevis/qstack/pkg/clock"
 	"github.com/mindevis/qstack/pkg/config"
 	"github.com/mindevis/qstack/pkg/db"
+	"github.com/mindevis/qstack/pkg/events"
 	"github.com/mindevis/qstack/pkg/grpcclient"
 	"github.com/mindevis/qstack/pkg/ids"
 	"github.com/mindevis/qstack/pkg/operation"
@@ -91,7 +92,7 @@ func run(cfgPath string) error {
 	}
 	defer pool.Close()
 	if cfg.Migrate {
-		for _, m := range []func(context.Context, *pgxpool.Pool) ([]string, error){store.Migrate, operation.Migrate, outbox.Migrate} {
+		for _, m := range []func(context.Context, *pgxpool.Pool) ([]string, error){store.Migrate, operation.Migrate, outbox.Migrate, events.Migrate} {
 			if _, err := m(ctx, pool); err != nil {
 				return fmt.Errorf("migrate: %w", err)
 			}
@@ -114,7 +115,7 @@ func run(cfgPath string) error {
 		return err
 	}
 	ops := operation.New(pool, clk, gen, operation.WithCreateHook(auditor.OperationCreated))
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, QuotaDefaults: cfg.Quotas()})
 	if err != nil {
 		return err
 	}

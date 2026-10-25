@@ -8,7 +8,61 @@ package sqlcdb
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const addUsage = `-- name: AddUsage :exec
+UPDATE quota_usage SET used = GREATEST(used + $1, 0), updated_at = $2
+WHERE project_id = $3 AND metric = $4
+`
+
+type AddUsageParams struct {
+	Amount    int64
+	UpdatedAt time.Time
+	ProjectID string
+	Metric    string
+}
+
+func (q *Queries) AddUsage(ctx context.Context, arg AddUsageParams) error {
+	_, err := q.db.Exec(ctx, addUsage,
+		arg.Amount,
+		arg.UpdatedAt,
+		arg.ProjectID,
+		arg.Metric,
+	)
+	return err
+}
+
+const correctUsage = `-- name: CorrectUsage :execrows
+INSERT INTO quota_usage (project_id, metric, used, updated_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (project_id, metric) DO UPDATE SET used = EXCLUDED.used, updated_at = EXCLUDED.updated_at
+WHERE quota_usage.updated_at < $5 AND quota_usage.used <> EXCLUDED.used
+`
+
+type CorrectUsageParams struct {
+	ProjectID    string
+	Metric       string
+	Used         int64
+	UpdatedAt    time.Time
+	SnapshotTime time.Time
+}
+
+// Sets used to the snapshot value unless the row changed after the
+// snapshot was counted (REQ-RM-002).
+func (q *Queries) CorrectUsage(ctx context.Context, arg CorrectUsageParams) (int64, error) {
+	result, err := q.db.Exec(ctx, correctUsage,
+		arg.ProjectID,
+		arg.Metric,
+		arg.Used,
+		arg.UpdatedAt,
+		arg.SnapshotTime,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
 
 const deleteBinding = `-- name: DeleteBinding :exec
 DELETE FROM access_bindings WHERE id = $1
@@ -25,6 +79,22 @@ DELETE FROM access_bindings WHERE resource_id = $1
 
 func (q *Queries) DeleteResourceBindings(ctx context.Context, resourceID string) error {
 	_, err := q.db.Exec(ctx, deleteResourceBindings, resourceID)
+	return err
+}
+
+const ensureUsage = `-- name: EnsureUsage :exec
+INSERT INTO quota_usage (project_id, metric, used, updated_at) VALUES ($1, $2, 0, $3)
+ON CONFLICT DO NOTHING
+`
+
+type EnsureUsageParams struct {
+	ProjectID string
+	Metric    string
+	UpdatedAt time.Time
+}
+
+func (q *Queries) EnsureUsage(ctx context.Context, arg EnsureUsageParams) error {
+	_, err := q.db.Exec(ctx, ensureUsage, arg.ProjectID, arg.Metric, arg.UpdatedAt)
 	return err
 }
 
@@ -147,6 +217,24 @@ func (q *Queries) GetProjectForUpdate(ctx context.Context, id string) (Project, 
 	return i, err
 }
 
+const getReservationForUpdate = `-- name: GetReservationForUpdate :one
+SELECT operation_id, project_id, state, expire_at, created_at, updated_at FROM quota_reservations WHERE operation_id = $1 FOR UPDATE
+`
+
+func (q *Queries) GetReservationForUpdate(ctx context.Context, operationID string) (QuotaReservation, error) {
+	row := q.db.QueryRow(ctx, getReservationForUpdate, operationID)
+	var i QuotaReservation
+	err := row.Scan(
+		&i.OperationID,
+		&i.ProjectID,
+		&i.State,
+		&i.ExpireAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertBinding = `-- name: InsertBinding :exec
 INSERT INTO access_bindings (id, resource_type, resource_id, organization_id, role_id, subject_type, subject_id, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -247,6 +335,51 @@ func (q *Queries) InsertProject(ctx context.Context, arg InsertProjectParams) er
 	return err
 }
 
+const insertReservation = `-- name: InsertReservation :exec
+INSERT INTO quota_reservations (operation_id, project_id, state, expire_at, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $5)
+`
+
+type InsertReservationParams struct {
+	OperationID string
+	ProjectID   string
+	State       string
+	ExpireAt    time.Time
+	CreatedAt   time.Time
+}
+
+func (q *Queries) InsertReservation(ctx context.Context, arg InsertReservationParams) error {
+	_, err := q.db.Exec(ctx, insertReservation,
+		arg.OperationID,
+		arg.ProjectID,
+		arg.State,
+		arg.ExpireAt,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const insertReservationDelta = `-- name: InsertReservationDelta :exec
+INSERT INTO quota_reservation_deltas (operation_id, project_id, metric, amount) VALUES ($1, $2, $3, $4)
+`
+
+type InsertReservationDeltaParams struct {
+	OperationID string
+	ProjectID   string
+	Metric      string
+	Amount      int64
+}
+
+func (q *Queries) InsertReservationDelta(ctx context.Context, arg InsertReservationDeltaParams) error {
+	_, err := q.db.Exec(ctx, insertReservationDelta,
+		arg.OperationID,
+		arg.ProjectID,
+		arg.Metric,
+		arg.Amount,
+	)
+	return err
+}
+
 const listBindings = `-- name: ListBindings :many
 SELECT id, resource_type, resource_id, organization_id, role_id, subject_type, subject_id, created_at FROM access_bindings
 WHERE resource_id = $1 ORDER BY id
@@ -321,6 +454,275 @@ func (q *Queries) ListBindingsPage(ctx context.Context, arg ListBindingsPagePara
 	return items, nil
 }
 
+const listLimits = `-- name: ListLimits :many
+SELECT metric, "limit" FROM quota_limits WHERE project_id = $1
+`
+
+type ListLimitsRow struct {
+	Metric string
+	Limit  int64
+}
+
+func (q *Queries) ListLimits(ctx context.Context, projectID string) ([]ListLimitsRow, error) {
+	rows, err := q.db.Query(ctx, listLimits, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLimitsRow
+	for rows.Next() {
+		var i ListLimitsRow
+		if err := rows.Scan(&i.Metric, &i.Limit); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReservationDeltas = `-- name: ListReservationDeltas :many
+SELECT metric, amount FROM quota_reservation_deltas WHERE operation_id = $1 ORDER BY metric
+`
+
+type ListReservationDeltasRow struct {
+	Metric string
+	Amount int64
+}
+
+func (q *Queries) ListReservationDeltas(ctx context.Context, operationID string) ([]ListReservationDeltasRow, error) {
+	rows, err := q.db.Query(ctx, listReservationDeltas, operationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReservationDeltasRow
+	for rows.Next() {
+		var i ListReservationDeltasRow
+		if err := rows.Scan(&i.Metric, &i.Amount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUsage = `-- name: ListUsage :many
+SELECT project_id, metric, used, updated_at FROM quota_usage WHERE project_id = $1
+`
+
+func (q *Queries) ListUsage(ctx context.Context, projectID string) ([]QuotaUsage, error) {
+	rows, err := q.db.Query(ctx, listUsage, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuotaUsage
+	for rows.Next() {
+		var i QuotaUsage
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Metric,
+			&i.Used,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const liveProjects = `-- name: LiveProjects :many
+SELECT id FROM projects WHERE id = ANY($1::text[]) AND deleted_at IS NULL
+`
+
+func (q *Queries) LiveProjects(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, liveProjects, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockLiveProject = `-- name: LockLiveProject :one
+SELECT status FROM projects WHERE id = $1 AND deleted_at IS NULL FOR SHARE
+`
+
+func (q *Queries) LockLiveProject(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockLiveProject, id)
+	var status string
+	err := row.Scan(&status)
+	return status, err
+}
+
+const lockUsage = `-- name: LockUsage :many
+SELECT project_id, metric, used, updated_at FROM quota_usage WHERE project_id = $1 AND metric = ANY($2::text[])
+ORDER BY metric FOR UPDATE
+`
+
+type LockUsageParams struct {
+	ProjectID string
+	Metrics   []string
+}
+
+func (q *Queries) LockUsage(ctx context.Context, arg LockUsageParams) ([]QuotaUsage, error) {
+	rows, err := q.db.Query(ctx, lockUsage, arg.ProjectID, arg.Metrics)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuotaUsage
+	for rows.Next() {
+		var i QuotaUsage
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Metric,
+			&i.Used,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const projectInUse = `-- name: ProjectInUse :one
+SELECT EXISTS (SELECT 1 FROM quota_usage u WHERE u.project_id = $1 AND u.used > 0)
+    OR EXISTS (
+        SELECT 1 FROM quota_reservation_deltas d JOIN quota_reservations r ON r.operation_id = d.operation_id
+        WHERE d.project_id = $1 AND d.amount > 0 AND r.state = 'RESERVED' AND r.expire_at > $2)
+`
+
+type ProjectInUseParams struct {
+	ProjectID string
+	Now       time.Time
+}
+
+func (q *Queries) ProjectInUse(ctx context.Context, arg ProjectInUseParams) (pgtype.Bool, error) {
+	row := q.db.QueryRow(ctx, projectInUse, arg.ProjectID, arg.Now)
+	var column_1 pgtype.Bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const purgeReservations = `-- name: PurgeReservations :execrows
+DELETE FROM quota_reservations WHERE updated_at < $1 AND (state <> 'RESERVED' OR expire_at < $1)
+`
+
+func (q *Queries) PurgeReservations(ctx context.Context, before time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, purgeReservations, before)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const reservedByMetric = `-- name: ReservedByMetric :many
+SELECT d.metric, sum(d.amount)::bigint AS reserved
+FROM quota_reservation_deltas d JOIN quota_reservations r ON r.operation_id = d.operation_id
+WHERE d.project_id = $1 AND d.amount > 0 AND r.state = 'RESERVED' AND r.expire_at > $2
+GROUP BY d.metric
+`
+
+type ReservedByMetricParams struct {
+	ProjectID string
+	Now       time.Time
+}
+
+type ReservedByMetricRow struct {
+	Metric   string
+	Reserved int64
+}
+
+func (q *Queries) ReservedByMetric(ctx context.Context, arg ReservedByMetricParams) ([]ReservedByMetricRow, error) {
+	rows, err := q.db.Query(ctx, reservedByMetric, arg.ProjectID, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReservedByMetricRow
+	for rows.Next() {
+		var i ReservedByMetricRow
+		if err := rows.Scan(&i.Metric, &i.Reserved); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const serviceUsage = `-- name: ServiceUsage :many
+SELECT project_id, metric, used, updated_at FROM quota_usage WHERE metric LIKE $1::text || '%' AND used > 0
+`
+
+func (q *Queries) ServiceUsage(ctx context.Context, prefix string) ([]QuotaUsage, error) {
+	rows, err := q.db.Query(ctx, serviceUsage, prefix)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []QuotaUsage
+	for rows.Next() {
+		var i QuotaUsage
+		if err := rows.Scan(
+			&i.ProjectID,
+			&i.Metric,
+			&i.Used,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setReservationState = `-- name: SetReservationState :exec
+UPDATE quota_reservations SET state = $2, updated_at = $3 WHERE operation_id = $1
+`
+
+type SetReservationStateParams struct {
+	OperationID string
+	State       string
+	UpdatedAt   time.Time
+}
+
+func (q *Queries) SetReservationState(ctx context.Context, arg SetReservationStateParams) error {
+	_, err := q.db.Exec(ctx, setReservationState, arg.OperationID, arg.State, arg.UpdatedAt)
+	return err
+}
+
 const updateOrganization = `-- name: UpdateOrganization :execrows
 UPDATE organizations
 SET display_name = $1, description = $2, labels = $3, iac_tool = $4,
@@ -391,4 +793,26 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) (i
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const upsertLimit = `-- name: UpsertLimit :exec
+INSERT INTO quota_limits (project_id, metric, "limit", updated_at) VALUES ($1, $2, $3, $4)
+ON CONFLICT (project_id, metric) DO UPDATE SET "limit" = EXCLUDED."limit", updated_at = EXCLUDED.updated_at
+`
+
+type UpsertLimitParams struct {
+	ProjectID string
+	Metric    string
+	Limit     int64
+	UpdatedAt time.Time
+}
+
+func (q *Queries) UpsertLimit(ctx context.Context, arg UpsertLimitParams) error {
+	_, err := q.db.Exec(ctx, upsertLimit,
+		arg.ProjectID,
+		arg.Metric,
+		arg.Limit,
+		arg.UpdatedAt,
+	)
+	return err
 }

@@ -3,9 +3,6 @@ package api
 import (
 	"context"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	accessv1 "github.com/mindevis/qstack/gen/go/qstack/access/v1"
 	operationv1 "github.com/mindevis/qstack/gen/go/qstack/operation/v1"
 	rmv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/v1"
@@ -126,12 +123,4 @@ func (s *projects) UpdateAccessBindings(ctx context.Context, req *accessv1.Updat
 	}
 	h := store.Holder{Type: domain.ResourceProject, ID: p.ID, OrganizationID: p.OrganizationID}
 	return s.app.UpdateBindings(ctx, subject(ctx), h, deltas(req.GetAccessBindingDeltas()))
-}
-
-// GetQuotas authorizes the call; quotas themselves arrive with T-1.3.
-func (s *projects) GetQuotas(ctx context.Context, req *rmv1.GetQuotasRequest) (*rmv1.GetQuotasResponse, error) {
-	if _, err := s.loadProject(ctx, req.GetProjectId()); err != nil {
-		return nil, err
-	}
-	return nil, status.Error(codes.Unimplemented, "project quotas are not available yet")
 }

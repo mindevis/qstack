@@ -45,6 +45,9 @@ type Config struct {
 	Outbox     *outbox.Writer
 	IDs        *ids.Generator
 	Clock      clock.Clock
+	// QuotaDefaults are the limits of every project (domain.DefaultQuotas
+	// unless configured); metrics without a limit are not restricted.
+	QuotaDefaults map[string]int64
 }
 
 // App implements the use cases.

@@ -104,6 +104,7 @@ func NewInternalServer(a *app.App, v *validate.Validator, logger *slog.Logger, o
 		v.UnaryServerInterceptor(),
 	)}, opts...)...)
 	rminternalv1.RegisterOrganizationServiceServer(srv, &internalOrganizations{app: a})
+	rminternalv1.RegisterQuotaServiceServer(srv, &quotas{app: a})
 	return srv
 }
 

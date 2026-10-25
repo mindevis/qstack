@@ -53,3 +53,23 @@ message ReleaseRequest {
 }
 
 message ReleaseResponse {}
+
+// UsageSnapshot is the data of the hourly event
+// `qstack.<service>.usage.snapshot` (subject
+// `qs.<region>.usage.snapshot.<service>`): the actual usage of the
+// service's quota metrics per project (REQ-RM-002). Projects without
+// resources may be omitted: their usage is zero.
+message UsageSnapshot {
+  // Service owning the metrics, e.g. "compute": the snapshot covers every
+  // metric `<service>.…`.
+  string service = 1;
+  // When the usage was counted.
+  google.protobuf.Timestamp snapshot_time = 2;
+  repeated ProjectUsage projects = 3;
+}
+
+message ProjectUsage {
+  string project_id = 1;
+  // Actual amount per metric.
+  repeated QuotaDelta usage = 2;
+}

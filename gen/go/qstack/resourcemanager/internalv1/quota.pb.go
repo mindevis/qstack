@@ -347,6 +347,127 @@ func (*ReleaseResponse) Descriptor() ([]byte, []int) {
 	return file_qstack_resourcemanager_internal_v1_quota_proto_rawDescGZIP(), []int{6}
 }
 
+// UsageSnapshot is the data of the hourly event
+// `qstack.<service>.usage.snapshot` (subject
+// `qs.<region>.usage.snapshot.<service>`): the actual usage of the
+// service's quota metrics per project (REQ-RM-002). Projects without
+// resources may be omitted: their usage is zero.
+type UsageSnapshot struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Service owning the metrics, e.g. "compute": the snapshot covers every
+	// metric `<service>.…`.
+	Service string `protobuf:"bytes,1,opt,name=service,proto3" json:"service,omitempty"`
+	// When the usage was counted.
+	SnapshotTime  *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=snapshot_time,json=snapshotTime,proto3" json:"snapshot_time,omitempty"`
+	Projects      []*ProjectUsage        `protobuf:"bytes,3,rep,name=projects,proto3" json:"projects,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UsageSnapshot) Reset() {
+	*x = UsageSnapshot{}
+	mi := &file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UsageSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UsageSnapshot) ProtoMessage() {}
+
+func (x *UsageSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UsageSnapshot.ProtoReflect.Descriptor instead.
+func (*UsageSnapshot) Descriptor() ([]byte, []int) {
+	return file_qstack_resourcemanager_internal_v1_quota_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *UsageSnapshot) GetService() string {
+	if x != nil {
+		return x.Service
+	}
+	return ""
+}
+
+func (x *UsageSnapshot) GetSnapshotTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.SnapshotTime
+	}
+	return nil
+}
+
+func (x *UsageSnapshot) GetProjects() []*ProjectUsage {
+	if x != nil {
+		return x.Projects
+	}
+	return nil
+}
+
+type ProjectUsage struct {
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	ProjectId string                 `protobuf:"bytes,1,opt,name=project_id,json=projectId,proto3" json:"project_id,omitempty"`
+	// Actual amount per metric.
+	Usage         []*QuotaDelta `protobuf:"bytes,2,rep,name=usage,proto3" json:"usage,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProjectUsage) Reset() {
+	*x = ProjectUsage{}
+	mi := &file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProjectUsage) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProjectUsage) ProtoMessage() {}
+
+func (x *ProjectUsage) ProtoReflect() protoreflect.Message {
+	mi := &file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProjectUsage.ProtoReflect.Descriptor instead.
+func (*ProjectUsage) Descriptor() ([]byte, []int) {
+	return file_qstack_resourcemanager_internal_v1_quota_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ProjectUsage) GetProjectId() string {
+	if x != nil {
+		return x.ProjectId
+	}
+	return ""
+}
+
+func (x *ProjectUsage) GetUsage() []*QuotaDelta {
+	if x != nil {
+		return x.Usage
+	}
+	return nil
+}
+
 var File_qstack_resourcemanager_internal_v1_quota_proto protoreflect.FileDescriptor
 
 const file_qstack_resourcemanager_internal_v1_quota_proto_rawDesc = "" +
@@ -370,7 +491,15 @@ const file_qstack_resourcemanager_internal_v1_quota_proto_rawDesc = "" +
 	"\x0eCommitResponse\"W\n" +
 	"\x0eReleaseRequest\x12E\n" +
 	"\foperation_id\x18\x01 \x01(\tB\"\xbaH\x1fr\x1d2\x1b^op-[0-9a-hjkmnp-tv-z]{26}$R\voperationId\"\x11\n" +
-	"\x0fReleaseResponse2\xe7\x02\n" +
+	"\x0fReleaseResponse\"\xb8\x01\n" +
+	"\rUsageSnapshot\x12\x18\n" +
+	"\aservice\x18\x01 \x01(\tR\aservice\x12?\n" +
+	"\rsnapshot_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\fsnapshotTime\x12L\n" +
+	"\bprojects\x18\x03 \x03(\v20.qstack.resourcemanager.internal.v1.ProjectUsageR\bprojects\"s\n" +
+	"\fProjectUsage\x12\x1d\n" +
+	"\n" +
+	"project_id\x18\x01 \x01(\tR\tprojectId\x12D\n" +
+	"\x05usage\x18\x02 \x03(\v2..qstack.resourcemanager.internal.v1.QuotaDeltaR\x05usage2\xe7\x02\n" +
 	"\fQuotaService\x12r\n" +
 	"\aReserve\x122.qstack.resourcemanager.internal.v1.ReserveRequest\x1a3.qstack.resourcemanager.internal.v1.ReserveResponse\x12o\n" +
 	"\x06Commit\x121.qstack.resourcemanager.internal.v1.CommitRequest\x1a2.qstack.resourcemanager.internal.v1.CommitResponse\x12r\n" +
@@ -390,7 +519,7 @@ func file_qstack_resourcemanager_internal_v1_quota_proto_rawDescGZIP() []byte {
 	return file_qstack_resourcemanager_internal_v1_quota_proto_rawDescData
 }
 
-var file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_qstack_resourcemanager_internal_v1_quota_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_qstack_resourcemanager_internal_v1_quota_proto_goTypes = []any{
 	(*QuotaDelta)(nil),            // 0: qstack.resourcemanager.internal.v1.QuotaDelta
 	(*ReserveRequest)(nil),        // 1: qstack.resourcemanager.internal.v1.ReserveRequest
@@ -399,22 +528,27 @@ var file_qstack_resourcemanager_internal_v1_quota_proto_goTypes = []any{
 	(*CommitResponse)(nil),        // 4: qstack.resourcemanager.internal.v1.CommitResponse
 	(*ReleaseRequest)(nil),        // 5: qstack.resourcemanager.internal.v1.ReleaseRequest
 	(*ReleaseResponse)(nil),       // 6: qstack.resourcemanager.internal.v1.ReleaseResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*UsageSnapshot)(nil),         // 7: qstack.resourcemanager.internal.v1.UsageSnapshot
+	(*ProjectUsage)(nil),          // 8: qstack.resourcemanager.internal.v1.ProjectUsage
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_qstack_resourcemanager_internal_v1_quota_proto_depIdxs = []int32{
 	0, // 0: qstack.resourcemanager.internal.v1.ReserveRequest.deltas:type_name -> qstack.resourcemanager.internal.v1.QuotaDelta
-	7, // 1: qstack.resourcemanager.internal.v1.ReserveResponse.expire_time:type_name -> google.protobuf.Timestamp
-	1, // 2: qstack.resourcemanager.internal.v1.QuotaService.Reserve:input_type -> qstack.resourcemanager.internal.v1.ReserveRequest
-	3, // 3: qstack.resourcemanager.internal.v1.QuotaService.Commit:input_type -> qstack.resourcemanager.internal.v1.CommitRequest
-	5, // 4: qstack.resourcemanager.internal.v1.QuotaService.Release:input_type -> qstack.resourcemanager.internal.v1.ReleaseRequest
-	2, // 5: qstack.resourcemanager.internal.v1.QuotaService.Reserve:output_type -> qstack.resourcemanager.internal.v1.ReserveResponse
-	4, // 6: qstack.resourcemanager.internal.v1.QuotaService.Commit:output_type -> qstack.resourcemanager.internal.v1.CommitResponse
-	6, // 7: qstack.resourcemanager.internal.v1.QuotaService.Release:output_type -> qstack.resourcemanager.internal.v1.ReleaseResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	9, // 1: qstack.resourcemanager.internal.v1.ReserveResponse.expire_time:type_name -> google.protobuf.Timestamp
+	9, // 2: qstack.resourcemanager.internal.v1.UsageSnapshot.snapshot_time:type_name -> google.protobuf.Timestamp
+	8, // 3: qstack.resourcemanager.internal.v1.UsageSnapshot.projects:type_name -> qstack.resourcemanager.internal.v1.ProjectUsage
+	0, // 4: qstack.resourcemanager.internal.v1.ProjectUsage.usage:type_name -> qstack.resourcemanager.internal.v1.QuotaDelta
+	1, // 5: qstack.resourcemanager.internal.v1.QuotaService.Reserve:input_type -> qstack.resourcemanager.internal.v1.ReserveRequest
+	3, // 6: qstack.resourcemanager.internal.v1.QuotaService.Commit:input_type -> qstack.resourcemanager.internal.v1.CommitRequest
+	5, // 7: qstack.resourcemanager.internal.v1.QuotaService.Release:input_type -> qstack.resourcemanager.internal.v1.ReleaseRequest
+	2, // 8: qstack.resourcemanager.internal.v1.QuotaService.Reserve:output_type -> qstack.resourcemanager.internal.v1.ReserveResponse
+	4, // 9: qstack.resourcemanager.internal.v1.QuotaService.Commit:output_type -> qstack.resourcemanager.internal.v1.CommitResponse
+	6, // 10: qstack.resourcemanager.internal.v1.QuotaService.Release:output_type -> qstack.resourcemanager.internal.v1.ReleaseResponse
+	8, // [8:11] is the sub-list for method output_type
+	5, // [5:8] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_qstack_resourcemanager_internal_v1_quota_proto_init() }
@@ -428,7 +562,7 @@ func file_qstack_resourcemanager_internal_v1_quota_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_qstack_resourcemanager_internal_v1_quota_proto_rawDesc), len(file_qstack_resourcemanager_internal_v1_quota_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
