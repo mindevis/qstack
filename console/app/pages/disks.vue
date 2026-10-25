@@ -7,6 +7,7 @@ const UBadge = resolveComponent('UBadge')
 const UCheckbox = resolveComponent('UCheckbox')
 
 const toast = useToast()
+const { t } = useI18n()
 const table = useTemplateRef('table')
 
 const columnFilters = ref([{
@@ -25,7 +26,7 @@ const statusColor = {
   error: 'error' as const
 }
 
-const columns: TableColumn<Disk>[] = [
+const columns = computed<TableColumn<Disk>[]>(() => [
   {
     id: 'select',
     header: ({ table }) =>
@@ -46,7 +47,7 @@ const columns: TableColumn<Disk>[] = [
   },
   {
     accessorKey: 'name',
-    header: 'Name',
+    header: t('common.name'),
     cell: ({ row }) => h('div', undefined, [
       h('p', { class: 'font-medium text-highlighted' }, row.original.name),
       h('p', { class: 'font-mono text-xs' }, row.original.id)
@@ -54,28 +55,28 @@ const columns: TableColumn<Disk>[] = [
   },
   {
     accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => h(UBadge, { class: 'capitalize', variant: 'subtle', color: statusColor[row.original.status] }, () => row.original.status)
+    header: t('common.status'),
+    cell: ({ row }) => h(UBadge, { variant: 'subtle', color: statusColor[row.original.status] }, () => t(`status.${row.original.status}`))
   },
   {
     accessorKey: 'type',
-    header: 'Type'
+    header: t('common.type')
   },
   {
     accessorKey: 'sizeGib',
-    header: 'Size',
+    header: t('common.size'),
     cell: ({ row }) => `${row.original.sizeGib} GiB`
   },
   {
     accessorKey: 'attachedTo',
-    header: 'Attached to',
+    header: t('common.attachedTo'),
     cell: ({ row }) => row.original.attachedTo ?? '—'
   },
   {
     accessorKey: 'zone',
-    header: 'Zone'
+    header: t('common.zone')
   }
-]
+])
 
 const name = computed({
   get: (): string => (table.value?.tableApi?.getColumn('name')?.getFilterValue() as string) || '',
@@ -88,20 +89,20 @@ const pagination = ref({
 })
 
 function onCreate() {
-  toast.add({ title: 'Demo', description: 'Disks are created by the Block Storage API (phase 1)', color: 'info' })
+  toast.add({ title: t('app.demo'), description: t('disks.demo'), color: 'info' })
 }
 </script>
 
 <template>
   <UDashboardPanel id="disks">
     <template #header>
-      <UDashboardNavbar title="Disks">
+      <UDashboardNavbar :title="t('disks.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
-          <UButton label="New disk" icon="i-lucide-plus" @click="onCreate" />
+          <UButton :label="t('disks.new')" icon="i-lucide-plus" @click="onCreate" />
         </template>
       </UDashboardNavbar>
     </template>
@@ -112,13 +113,13 @@ function onCreate() {
           v-model="name"
           class="max-w-sm"
           icon="i-lucide-search"
-          placeholder="Filter names..."
+          :placeholder="t('common.filterNames')"
         />
 
-        <ResourcesDeleteModal kind="disk" :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
+        <ResourcesDeleteModal :kind="t('disks.kind')" :count="table?.tableApi?.getFilteredSelectedRowModel().rows.length">
           <UButton
             v-if="table?.tableApi?.getFilteredSelectedRowModel().rows.length"
-            label="Delete"
+            :label="t('common.delete')"
             color="error"
             variant="subtle"
             icon="i-lucide-trash"
@@ -156,8 +157,10 @@ function onCreate() {
 
       <div class="flex items-center justify-between gap-3 border-t border-default pt-4 mt-auto">
         <div class="text-sm text-muted">
-          {{ table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0 }} of
-          {{ table?.tableApi?.getFilteredRowModel().rows.length || 0 }} row(s) selected.
+          {{ t('common.rowsSelected', {
+            selected: table?.tableApi?.getFilteredSelectedRowModel().rows.length || 0,
+            total: table?.tableApi?.getFilteredRowModel().rows.length || 0
+          }) }}
         </div>
 
         <UPagination

@@ -6,6 +6,8 @@ const props = defineProps<{
   range: Range
 }>()
 
+const { t, locale } = useI18n()
+
 const [{ data: instances }, { data: disks }] = await Promise.all([
   useFetch<Instance[]>('/api/instances', { default: () => [] }),
   useFetch<Disk[]>('/api/disks', { default: () => [] })
@@ -16,28 +18,28 @@ const [{ data: instances }, { data: disks }] = await Promise.all([
 const { data: stats } = await useAsyncData<Stat[]>('stats', async () => {
   const running = instances.value.filter(i => i.status === 'running')
   return [{
-    title: 'Instances',
+    title: t('home.statInstances'),
     icon: 'i-lucide-server',
     value: `${running.length} / ${instances.value.length}`,
     to: '/compute/instances'
   }, {
-    title: 'vCPU',
+    title: t('home.statVcpu'),
     icon: 'i-lucide-cpu',
     value: running.reduce((sum, i) => sum + i.vcpus, 0),
     to: '/compute/instances'
   }, {
-    title: 'Memory, GiB',
+    title: t('home.statMemory'),
     icon: 'i-lucide-memory-stick',
     value: running.reduce((sum, i) => sum + i.memoryGib, 0),
     to: '/compute/instances'
   }, {
-    title: 'Disks, GiB',
+    title: t('home.statDisks'),
     icon: 'i-lucide-hard-drive',
     value: disks.value.reduce((sum, d) => sum + d.sizeGib, 0),
     to: '/disks'
   }].map(stat => ({ ...stat, variation: randomInt(-15, 25) }))
 }, {
-  watch: [() => props.period, () => props.range],
+  watch: [() => props.period, () => props.range, locale],
   default: () => []
 })
 </script>

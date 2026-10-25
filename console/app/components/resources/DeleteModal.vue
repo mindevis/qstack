@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   count?: number
-  // Resource kind in singular, e.g. "instance".
+  // Resource kind as shown in the title, e.g. "ВМ" / "instances".
   kind?: string
 }>(), {
   count: 0,
@@ -10,10 +10,11 @@ const props = withDefaults(defineProps<{
 
 const open = ref(false)
 const toast = useToast()
+const { t } = useI18n()
 
 async function onSubmit() {
   await new Promise(resolve => setTimeout(resolve, 1000))
-  toast.add({ title: 'Demo', description: `Deleting ${props.count} ${props.kind}(s) needs the API (phase 1)`, color: 'info' })
+  toast.add({ title: t('app.demo'), description: t('delete.demo'), color: 'info' })
   open.value = false
 }
 </script>
@@ -21,21 +22,21 @@ async function onSubmit() {
 <template>
   <UModal
     v-model:open="open"
-    :title="`Delete ${count} ${kind}${count > 1 ? 's' : ''}`"
-    :description="`Are you sure, this action cannot be undone.`"
+    :title="t('delete.title', { kind, count })"
+    :description="t('delete.description')"
   >
     <slot />
 
     <template #body>
       <div class="flex justify-end gap-2">
         <UButton
-          label="Cancel"
+          :label="t('common.cancel')"
           color="neutral"
           variant="subtle"
           @click="open = false"
         />
         <UButton
-          label="Delete"
+          :label="t('common.delete')"
           color="error"
           variant="solid"
           loading-auto

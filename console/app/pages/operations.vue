@@ -3,16 +3,18 @@ import { computed, ref, watch } from 'vue'
 import { breakpointsTailwind } from '@vueuse/core'
 import type { Operation } from '~/types'
 
-const tabItems = [{
-  label: 'All',
+const { t } = useI18n()
+
+const tabItems = computed(() => [{
+  label: t('common.all'),
   value: 'all'
 }, {
-  label: 'Running',
+  label: t('operations.running'),
   value: 'running'
 }, {
-  label: 'Failed',
+  label: t('operations.failed'),
   value: 'failed'
-}]
+}])
 const selectedTab = ref('all')
 
 const { data: operations } = await useFetch<Operation[]>('/api/operations', { default: () => [] })
@@ -61,7 +63,7 @@ const isMobile = breakpoints.smaller('lg')
     :max-size="40"
     resizable
   >
-    <UDashboardNavbar title="Operations">
+    <UDashboardNavbar :title="t('operations.title')">
       <template #leading>
         <UDashboardSidebarCollapse />
       </template>

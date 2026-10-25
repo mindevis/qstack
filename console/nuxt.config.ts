@@ -3,7 +3,8 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    '@nuxtjs/i18n'
   ],
 
   devtools: {
@@ -27,5 +28,17 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+
+  // Russian and English from day one (spec 10 §4); the choice is kept in a
+  // functional cookie.
+  i18n: {
+    locales: [
+      { code: 'ru', language: 'ru-RU', name: 'Русский', file: 'ru.json' },
+      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' }
+    ],
+    defaultLocale: 'ru',
+    strategy: 'no_prefix',
+    detectBrowserLanguage: { useCookie: true, cookieKey: 'qs_locale', redirectOn: 'root' }
   }
 })

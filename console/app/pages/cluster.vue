@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { formatTimeAgo } from '@vueuse/core'
 import type { ClusterNode } from '~/types'
+
+const { t } = useI18n()
+const { timeAgo } = useFormat()
 
 // Compute nodes of the region (spec 15 §4, roles ops.*).
 const { data: nodes } = await useFetch<ClusterNode[]>('/api/nodes', { default: () => [] })
@@ -17,14 +19,14 @@ const pct = (u: { used: number, total: number }) => Math.round((u.used / u.total
 <template>
   <UDashboardPanel id="cluster">
     <template #header>
-      <UDashboardNavbar title="Cluster">
+      <UDashboardNavbar :title="t('cluster.title')">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
 
         <template #right>
           <UBadge variant="subtle" color="neutral" icon="i-lucide-layers">
-            profile: single
+            {{ t('cluster.profile', { name: 'single' }) }}
           </UBadge>
         </template>
       </UDashboardNavbar>
@@ -46,8 +48,8 @@ const pct = (u: { used: number, total: number }) => Math.round((u.used / u.total
         >
           <div class="space-y-3 text-sm">
             <div class="flex items-center justify-between">
-              <UBadge :color="statusColor[node.status]" variant="subtle" class="capitalize">
-                {{ node.status }}
+              <UBadge :color="statusColor[node.status]" variant="subtle">
+                {{ t(`status.${node.status}`) }}
               </UBadge>
               <code class="text-muted">{{ node.version }}</code>
             </div>
@@ -62,15 +64,15 @@ const pct = (u: { used: number, total: number }) => Math.round((u.used / u.total
 
             <div>
               <div class="flex justify-between text-muted">
-                <span>Memory</span>
+                <span>{{ t('cluster.memory') }}</span>
                 <span class="tabular-nums">{{ node.memoryGib.used }} / {{ node.memoryGib.total }} GiB</span>
               </div>
               <UProgress :model-value="pct(node.memoryGib)" size="sm" class="mt-1" />
             </div>
 
             <div class="flex justify-between text-muted">
-              <span>{{ node.instances }} instances · {{ node.zone }}</span>
-              <span>heartbeat {{ formatTimeAgo(new Date(node.lastHeartbeat)) }}</span>
+              <span>{{ t('cluster.instancesZone', { n: node.instances, zone: node.zone }) }}</span>
+              <span>{{ t('cluster.heartbeat', { time: timeAgo(node.lastHeartbeat) }) }}</span>
             </div>
           </div>
         </UPageCard>

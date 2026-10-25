@@ -4,6 +4,8 @@ import type { TableColumn } from '@nuxt/ui'
 import type { Operation } from '~/types'
 
 const UBadge = resolveComponent('UBadge')
+const { t } = useI18n()
+const { dateTime } = useFormat()
 
 // The latest operations of the project.
 const { data } = await useFetch<Operation[]>('/api/operations', {
@@ -11,46 +13,38 @@ const { data } = await useFetch<Operation[]>('/api/operations', {
   transform: ops => ops.slice(0, 5)
 })
 
-const columns: TableColumn<Operation>[] = [
+const columns = computed<TableColumn<Operation>[]>(() => [
   {
     accessorKey: 'description',
-    header: 'Operation'
+    header: t('common.operation')
   },
   {
     accessorKey: 'createTime',
-    header: 'Date',
-    cell: ({ row }) => {
-      return new Date(row.getValue('createTime')).toLocaleString('en-US', {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      })
-    }
+    header: t('common.date'),
+    cell: ({ row }) => dateTime(row.original.createTime)
   },
   {
     id: 'status',
-    header: 'Status',
+    header: t('common.status'),
     cell: ({ row }) => {
       const op = row.original
       const [label, color] = !op.done
-        ? ['running', 'info' as const]
+        ? ['inProgress', 'info' as const]
         : op.error ? ['failed', 'error' as const] : ['done', 'success' as const]
 
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () => label)
+      return h(UBadge, { variant: 'subtle', color }, () => t(`status.${label}`))
     }
   },
   {
     accessorKey: 'createdBy',
-    header: 'Started by'
+    header: t('common.startedBy')
   },
   {
     accessorKey: 'resourceId',
-    header: () => h('div', { class: 'text-right' }, 'Resource'),
+    header: () => h('div', { class: 'text-right' }, t('common.resource')),
     cell: ({ row }) => h('div', { class: 'text-right font-mono text-xs' }, row.original.resourceId)
   }
-]
+])
 </script>
 
 <template>

@@ -6,6 +6,7 @@ defineProps<{
 }>()
 
 const colorMode = useColorMode()
+const { t, locale, locales, setLocale } = useI18n()
 const appConfig = useAppConfig()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
@@ -25,20 +26,20 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
   label: user.value.name,
   avatar: user.value.avatar
 }], [{
-  label: 'Profile',
+  label: t('user.profile'),
   icon: 'i-lucide-user'
 }, {
-  label: 'Billing',
+  label: t('user.billing'),
   icon: 'i-lucide-credit-card'
 }, {
-  label: 'Settings',
+  label: t('user.settings'),
   icon: 'i-lucide-settings',
   to: '/settings'
 }], [{
-  label: 'Theme',
+  label: t('user.theme'),
   icon: 'i-lucide-palette',
   children: [{
-    label: 'Primary',
+    label: t('user.primary'),
     slot: 'chip',
     chip: appConfig.ui.colors.primary,
     content: {
@@ -58,7 +59,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       }
     }))
   }, {
-    label: 'Neutral',
+    label: t('user.neutral'),
     slot: 'chip',
     chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
     content: {
@@ -79,10 +80,10 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     }))
   }]
 }, {
-  label: 'Appearance',
+  label: t('user.appearance'),
   icon: 'i-lucide-sun-moon',
   children: [{
-    label: 'Light',
+    label: t('user.light'),
     icon: 'i-lucide-sun',
     type: 'checkbox',
     checked: colorMode.value === 'light',
@@ -92,7 +93,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       colorMode.preference = 'light'
     }
   }, {
-    label: 'Dark',
+    label: t('user.dark'),
     icon: 'i-lucide-moon',
     type: 'checkbox',
     checked: colorMode.value === 'dark',
@@ -105,13 +106,26 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
       e.preventDefault()
     }
   }]
+}, {
+  label: t('user.language'),
+  icon: 'i-lucide-languages',
+  children: locales.value.map(l => ({
+    label: l.name,
+    type: 'checkbox' as const,
+    checked: l.code === locale.value,
+    onSelect(e: Event) {
+      e.preventDefault()
+
+      setLocale(l.code)
+    }
+  }))
 }], [{
-  label: 'qStack on GitHub',
+  label: t('user.github'),
   icon: 'i-simple-icons-github',
   to: 'https://github.com/mindevis/qstack',
   target: '_blank'
 }], [{
-  label: 'Log out',
+  label: t('user.logout'),
   icon: 'i-lucide-log-out'
 }]]))
 </script>

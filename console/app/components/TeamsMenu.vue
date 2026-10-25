@@ -5,6 +5,8 @@ defineProps<{
   collapsed?: boolean
 }>()
 
+const { t } = useI18n()
+
 // Organization / project switcher (was the template's team switcher).
 const { data: session } = await useFetch('/api/session', { key: 'session' })
 
@@ -26,11 +28,11 @@ const items = computed<DropdownMenuItem[][]>(() => {
       selectedProjectId.value = project.id
     }
   })), [{
-    label: 'Create project',
+    label: t('project.create'),
     icon: 'i-lucide-circle-plus',
     disabled: true
   }, {
-    label: 'Manage organization',
+    label: t('project.manage'),
     icon: 'i-lucide-cog',
     disabled: true
   }]]
