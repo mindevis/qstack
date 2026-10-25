@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	rmv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/v1"
+	"github.com/mindevis/qstack/internal/iam/catalog"
 	"github.com/mindevis/qstack/internal/resourcemanager/app"
 	"github.com/mindevis/qstack/internal/resourcemanager/controller"
 	"github.com/mindevis/qstack/internal/resourcemanager/domain"
@@ -59,7 +60,11 @@ func TestRelaysEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 	ops := operation.New(pool, clk, gen)
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	roles, err := catalog.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, Roles: roles})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +157,11 @@ func TestSnapshotReconciliation(t *testing.T) {
 		t.Fatal(err)
 	}
 	ops := operation.New(pool, clk, gen)
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	roles, err := catalog.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, Roles: roles})
 	if err != nil {
 		t.Fatal(err)
 	}

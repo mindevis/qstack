@@ -1,0 +1,96 @@
+# Permission and role catalog (spec 03 §2). Every permission a public
+# method declares with (qstack.api.permission) is listed here with its kind
+# (catalog_test checks both directions); services add theirs with their
+# methods.
+#
+# Kinds decide the generated roles:
+#   read   — Get/List (HTTP GET): viewer, editor, admin;
+#   write  — create/update/delete/custom methods: editor, admin;
+#   access — changes of access bindings: admin;
+#   use    — using a resource for another one (*.use, actAs), checked with
+#            authz.Require, not a method: editor, admin.
+# Every service gets <service>.viewer/.editor/.admin over its own
+# permissions; viewer, editor and admin span all services except billing.
+# Explicit roles are listed under roles.
+
+services:
+  iam:
+    title: IAM
+    permissions:
+      accessKeys.create: write
+      accessKeys.deactivate: write
+      accessKeys.delete: write
+      accessKeys.get: read
+      accessKeys.list: read
+      apiKeys.create: write
+      apiKeys.delete: write
+      apiKeys.get: read
+      apiKeys.list: read
+      authorizedKeys.create: write
+      authorizedKeys.delete: write
+      authorizedKeys.get: read
+      authorizedKeys.list: read
+      federations.create: write
+      federations.delete: write
+      federations.get: read
+      federations.list: read
+      federations.update: write
+      groups.create: write
+      groups.delete: write
+      groups.get: read
+      groups.list: read
+      groups.update: write
+      groups.updateMembers: write
+      roles.get: read
+      roles.list: read
+      serviceAccounts.actAs: use
+      serviceAccounts.create: write
+      serviceAccounts.delete: write
+      serviceAccounts.get: read
+      serviceAccounts.list: read
+      serviceAccounts.listAccessBindings: read
+      serviceAccounts.update: write
+      serviceAccounts.updateAccessBindings: access
+      # TokenService.CreateToken is public (authz.Options.Public); the
+      # permission is never checked.
+      tokens.create: write
+      users.block: write
+      users.get: read
+      users.getSelf: read
+      users.invite: write
+      users.list: read
+      users.remove: write
+      users.unblock: write
+  operations:
+    title: Operations
+    permissions:
+      operations.cancel: write
+      operations.get: read
+      operations.list: read
+  resourcemanager:
+    title: Resource Manager
+    permissions:
+      organizations.get: read
+      organizations.list: read
+      organizations.listAccessBindings: read
+      organizations.setAccessBindings: access
+      organizations.update: write
+      organizations.updateAccessBindings: access
+      projects.create: write
+      projects.delete: write
+      projects.get: read
+      projects.getQuotas: read
+      projects.list: read
+      projects.listAccessBindings: read
+      projects.update: write
+      projects.updateAccessBindings: access
+
+roles:
+  - id: iam.serviceAccounts.user
+    title: Service account user
+    description: Act as service accounts, e.g. attach them to instances.
+    permissions: [iam.serviceAccounts.actAs, iam.serviceAccounts.get, iam.serviceAccounts.list]
+  - id: resource-manager.organizations.owner
+    title: Organization owner
+    description: Everything in the organization; the last owner cannot be removed.
+    all: true

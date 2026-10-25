@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mindevis/qstack/internal/iam/catalog"
 	"github.com/mindevis/qstack/internal/resourcemanager/app"
 	rmconfig "github.com/mindevis/qstack/internal/resourcemanager/config"
 	"github.com/mindevis/qstack/internal/resourcemanager/controller"
@@ -95,7 +96,11 @@ func run(cfgPath string) error {
 		return err
 	}
 	ops := operation.New(pool, clk, gen)
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	roles, err := catalog.Load()
+	if err != nil {
+		return err
+	}
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, Roles: roles})
 	if err != nil {
 		return err
 	}
