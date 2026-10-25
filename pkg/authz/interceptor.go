@@ -29,7 +29,9 @@ type Options struct {
 
 // UnaryServerInterceptor authorizes public unary methods (see the package
 // documentation). Install it after authentication, inside the apierr
-// interceptor and outside pkg/idempotency.
+// interceptor and inside pkg/idempotency: a replayed call returns the
+// caller's own earlier Operation without reaching the handler, so it has no
+// check to pass.
 func UnaryServerInterceptor(opts Options) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		if opts.Public[info.FullMethod] {

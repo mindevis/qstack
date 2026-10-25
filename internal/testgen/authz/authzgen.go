@@ -60,6 +60,10 @@ type Suite struct {
 	Project, OtherProject authz.Resource
 	// Requests maps full method names ("/pkg.Service/Method") to builders.
 	Requests map[string]Request
+	// Skip maps methods whose authorization the generic cases cannot
+	// express to the reason, e.g. a List that filters instead of refusing;
+	// the service tests them itself.
+	Skip map[string]string
 }
 
 // Request builds a call of one method.
@@ -105,7 +109,7 @@ func Generate(s Suite) ([]Case, error) {
 	for svc, info := range s.Server.GetServiceInfo() {
 		for _, m := range info.Methods {
 			full := "/" + svc + "/" + m.Name
-			if !s.Public[full] {
+			if !s.Public[full] && s.Skip[full] == "" {
 				methods[full] = descriptor(svc, m.Name)
 			}
 		}

@@ -97,8 +97,10 @@ type Options struct {
 }
 
 // UnaryServerInterceptor implements REQ-PLT-050 for mutating methods (see
-// IsMutating). Place it after authentication and inside the apierr
-// interceptor, so that it sees handler errors unsanitized.
+// IsMutating). Place it after authentication, inside the apierr
+// interceptor, so that it sees handler errors unsanitized, and outside
+// pkg/authz: a replay answers with the subject's own Operation (keys are
+// per subject) before the handler, which is what authorizes a call.
 func UnaryServerInterceptor(opts Options) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		msg, ok := req.(proto.Message)

@@ -1,0 +1,22 @@
+# sqlc for the Resource Manager store: `make sqlc`. The schema is the goose
+# migrations (Up sections); generated files end in .sql.go / _sqlc.go.
+version: "2"
+sql:
+  - engine: postgresql
+    schema: migrations
+    queries: queries.sql
+    gen:
+      go:
+        package: sqlcdb
+        out: sqlcdb
+        sql_package: pgx/v5
+        output_db_file_name: db_sqlc.go
+        output_models_file_name: models_sqlc.go
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              type: time.Time
+              pointer: true

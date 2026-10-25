@@ -205,6 +205,27 @@ func CheckResource(ctx context.Context, path Path, getPermission string) error {
 	return err
 }
 
+// Filter authorizes the method's permission on each path and reports which
+// are allowed, for List methods that return only what the subject may see
+// rather than refusing (spec 03 §4.1, FilterAllowed). Denials do not fail
+// the request: it counts as authorized, since every returned item passed a
+// check. An access-service failure fails it with UNAVAILABLE.
+func Filter(ctx context.Context, paths []Path) ([]bool, error) {
+	c, err := callFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]bool, len(paths))
+	for i, p := range paths {
+		if out[i], err = c.authorize(ctx, c.permission, p); err != nil {
+			c.record(false)
+			return nil, err
+		}
+	}
+	c.record(true)
+	return out, nil
+}
+
 // Require checks an additional permission on a dependent resource, e.g.
 // vpc.subnets.use on the subnet a new instance attaches to, or
 // iam.serviceAccounts.actAs. It does not replace Check.
