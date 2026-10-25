@@ -45,9 +45,17 @@ type Config struct {
 	Outbox     *outbox.Writer
 	IDs        *ids.Generator
 	Clock      clock.Clock
+	// Roles validates role IDs of new bindings (the IAM role catalog).
+	Roles RoleCatalog
 	// QuotaDefaults are the limits of every project (domain.DefaultQuotas
 	// unless configured); metrics without a limit are not restricted.
 	QuotaDefaults map[string]int64
+}
+
+// RoleCatalog knows the predefined roles.
+type RoleCatalog interface {
+	// Validate fails for a role that does not exist.
+	Validate(role string) error
 }
 
 // App implements the use cases.
@@ -55,8 +63,8 @@ type App struct{ cfg Config }
 
 // New returns an App.
 func New(cfg Config) (*App, error) {
-	if cfg.Pool == nil || cfg.Operations == nil || cfg.Outbox == nil || cfg.IDs == nil || cfg.Clock == nil {
-		return nil, errors.New("app: pool, operations, outbox, ids and clock are required")
+	if cfg.Pool == nil || cfg.Operations == nil || cfg.Outbox == nil || cfg.IDs == nil || cfg.Clock == nil || cfg.Roles == nil {
+		return nil, errors.New("app: pool, operations, outbox, ids, clock and roles are required")
 	}
 	return &App{cfg: cfg}, nil
 }

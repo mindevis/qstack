@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 
+	"github.com/mindevis/qstack/internal/iam/catalog"
 	"github.com/mindevis/qstack/internal/resourcemanager/api"
 	"github.com/mindevis/qstack/internal/resourcemanager/app"
 	rmconfig "github.com/mindevis/qstack/internal/resourcemanager/config"
@@ -115,7 +116,11 @@ func run(cfgPath string) error {
 		return err
 	}
 	ops := operation.New(pool, clk, gen, operation.WithCreateHook(auditor.OperationCreated))
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, QuotaDefaults: cfg.Quotas()})
+	roles, err := catalog.Load()
+	if err != nil {
+		return err
+	}
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, Roles: roles, QuotaDefaults: cfg.Quotas()})
 	if err != nil {
 		return err
 	}

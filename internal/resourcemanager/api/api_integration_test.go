@@ -25,6 +25,7 @@ import (
 	operationv1 "github.com/mindevis/qstack/gen/go/qstack/operation/v1"
 	rminternalv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/internalv1"
 	rmv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/v1"
+	"github.com/mindevis/qstack/internal/iam/catalog"
 	"github.com/mindevis/qstack/internal/resourcemanager/api"
 	"github.com/mindevis/qstack/internal/resourcemanager/app"
 	"github.com/mindevis/qstack/internal/resourcemanager/domain"
@@ -105,7 +106,11 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	ops := operation.New(pool, clk, gen, operation.WithCreateHook(auditor.OperationCreated))
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, QuotaDefaults: domain.DefaultQuotas})
+	roles, err := catalog.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, Roles: roles, QuotaDefaults: domain.DefaultQuotas})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -409,6 +414,12 @@ func TestAccessBindings(t *testing.T) {
 	next, err := e.orgs.ListAccessBindings(ctx, &accessv1.ListAccessBindingsRequest{ResourceId: org.GetId(), PageSize: 1, PageToken: list.GetNextPageToken()})
 	if err != nil || len(next.GetAccessBindings()) != 1 || next.GetNextPageToken() != "" {
 		t.Fatalf("second page = %v, %v", next, err)
+	}
+
+	unknown := &accessv1.AccessBinding{RoleId: "compute.nothing", Subject: &accessv1.Subject{Id: bob, Type: accessv1.Subject_TYPE_USER_ACCOUNT}}
+	if _, err := e.orgs.UpdateAccessBindings(ctx, &accessv1.UpdateAccessBindingsRequest{ResourceId: org.GetId(),
+		AccessBindingDeltas: []*accessv1.AccessBindingDelta{{Action: accessv1.AccessBindingDelta_ACTION_ADD, AccessBinding: unknown}}}); code(err) != codes.InvalidArgument {
+		t.Errorf("role outside the catalog: %v, want INVALID_ARGUMENT", err)
 	}
 
 	// Spec 03 §2: the last owner cannot be removed.

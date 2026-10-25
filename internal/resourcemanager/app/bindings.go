@@ -12,6 +12,7 @@ import (
 	rminternalv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/internalv1"
 	"github.com/mindevis/qstack/internal/resourcemanager/domain"
 	"github.com/mindevis/qstack/internal/resourcemanager/store"
+	"github.com/mindevis/qstack/pkg/apierr"
 	"github.com/mindevis/qstack/pkg/events"
 	"github.com/mindevis/qstack/pkg/ids"
 	"github.com/mindevis/qstack/pkg/operation"
@@ -61,6 +62,9 @@ func (a *App) changeBindings(ctx context.Context, subject string, h store.Holder
 		}
 		ch, err := change(current)
 		if err != nil || !ch.Changed() {
+			return nil, err
+		}
+		if err := a.checkRoles(ch.Added); err != nil {
 			return nil, err
 		}
 		now := a.now()
@@ -128,4 +132,14 @@ func (a *App) emitBindings(ctx context.Context, tx pgx.Tx, h store.Holder, versi
 		Version:        version,
 		AccessBindings: BindingsProto(bs),
 	})
+}
+
+// checkRoles rejects new bindings of roles that are not in the catalog.
+func (a *App) checkRoles(added []domain.Binding) error {
+	for _, b := range added {
+		if err := a.cfg.Roles.Validate(b.RoleID); err != nil {
+			return apierr.InvalidFields(apierr.FieldViolation{Field: "access_bindings.role_id", Description: err.Error()})
+		}
+	}
+	return nil
 }
