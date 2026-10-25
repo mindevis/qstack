@@ -46,6 +46,7 @@ var logger = slog.New(slog.DiscardHandler)
 type opServer struct {
 	operationv1.UnimplementedOperationServiceServer
 	cancel func(ctx context.Context) error
+	list   func(ctx context.Context) error
 }
 
 // The operation lives in `project`.
@@ -62,6 +63,9 @@ func (s *opServer) GetOperation(ctx context.Context, req *operationv1.GetOperati
 }
 
 func (s *opServer) ListOperations(ctx context.Context, req *operationv1.ListOperationsRequest) (*operationv1.ListOperationsResponse, error) {
+	if s.list != nil {
+		return &operationv1.ListOperationsResponse{}, s.list(ctx)
+	}
 	if err := authz.Check(ctx, authz.ProjectPath(org, req.GetProjectId())); err != nil {
 		return nil, err
 	}
@@ -191,6 +195,44 @@ func TestListOnProject(t *testing.T) {
 	}
 	if err := list(other); code(err) != codes.PermissionDenied {
 		t.Errorf("list other project: %v, want PERMISSION_DENIED", err)
+	}
+}
+
+// REQ-IAM-012 / spec 03 §4.1: Filter keeps what the subject may list; the
+// denied paths do not fail the call, an access-service failure does.
+func TestFilter(t *testing.T) {
+	e := newEnv(t)
+	e.access.Grant(alice, listPerm, authz.Resource{Type: "project", ID: project})
+	paths := []authz.Path{authz.ProjectPath(org, project), authz.ProjectPath(org, other)}
+	var got []bool
+	e.ops.list = func(ctx context.Context) error {
+		var err error
+		got, err = authz.Filter(ctx, paths)
+		return err
+	}
+	if _, err := e.client.ListOperations(as(alice), &operationv1.ListOperationsRequest{}); err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if !slices.Equal(got, []bool{true, false}) {
+		t.Errorf("Filter = %v, want [true false]", got)
+	}
+
+	got = nil
+	e.ops.list = func(ctx context.Context) error {
+		_, err := authz.Filter(ctx, nil)
+		return err
+	}
+	if _, err := e.client.ListOperations(as(alice), &operationv1.ListOperationsRequest{}); err != nil {
+		t.Errorf("empty filter: %v, want success", err)
+	}
+
+	e.access.FailWith(errors.New("iam down"))
+	e.ops.list = func(ctx context.Context) error {
+		_, err := authz.Filter(ctx, paths)
+		return err
+	}
+	if _, err := e.client.ListOperations(as(alice), &operationv1.ListOperationsRequest{}); code(err) != codes.Unavailable {
+		t.Errorf("access service down: %v, want UNAVAILABLE", err)
 	}
 }
 

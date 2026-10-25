@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package qstack.resourcemanager.internal.v1;
+
+import "buf/validate/validate.proto";
+import "qstack/access/v1/access.proto";
+import "qstack/resourcemanager/v1/organization.proto";
+
+// OrganizationService creates organizations for sign-up in qs-iam (spec 03
+// §7). Not exposed through the public gateway.
+service OrganizationService {
+  // Creates an organization and binds its owner to
+  // `resource-manager.organizations.owner`. Idempotent: a repeat with the
+  // same name and owner returns the existing organization; the name taken
+  // by another owner fails with ALREADY_EXISTS / QS_NAME_CONFLICT.
+  rpc CreateOrganization(CreateOrganizationRequest) returns (qstack.resourcemanager.v1.Organization);
+}
+
+message CreateOrganizationRequest {
+  string name = 1 [(buf.validate.field).string.pattern = "^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$"];
+  string display_name = 2 [(buf.validate.field).string.max_len = 100];
+  string owner_user_id = 3 [(buf.validate.field).string.pattern = "^usr-[0-9a-hjkmnp-tv-z]{26}$"];
+  // STATUS_PENDING_APPROVAL (sign-up mode `approval`) or STATUS_ACTIVE.
+  qstack.resourcemanager.v1.Organization.Status status = 4 [(buf.validate.field).enum = {
+    in: [
+      1,
+      2
+    ]
+  }];
+}
+
+// AccessBindingsChanged is the data of the event
+// `qstack.resourcemanager.accessbindings.updated`: the full binding set of
+// a resource after a change, for the IAM replica (spec 03 §4.1).
+message AccessBindingsChanged {
+  // `organization` or `project`.
+  string resource_type = 1;
+  string resource_id = 2;
+  // Organization of the resource (itself for an organization).
+  string organization_id = 3;
+  // Version of the binding set; consumers drop older versions.
+  int64 version = 4;
+  repeated qstack.access.v1.AccessBinding access_bindings = 5;
+}
