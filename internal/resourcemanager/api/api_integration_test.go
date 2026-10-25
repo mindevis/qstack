@@ -27,6 +27,7 @@ import (
 	rmv1 "github.com/mindevis/qstack/gen/go/qstack/resourcemanager/v1"
 	"github.com/mindevis/qstack/internal/resourcemanager/api"
 	"github.com/mindevis/qstack/internal/resourcemanager/app"
+	"github.com/mindevis/qstack/internal/resourcemanager/domain"
 	"github.com/mindevis/qstack/internal/resourcemanager/store"
 	authzgen "github.com/mindevis/qstack/internal/testgen/authz"
 	"github.com/mindevis/qstack/pkg/audit"
@@ -56,12 +57,14 @@ var permissions = []string{
 
 type env struct {
 	pool     *pgxpool.Pool
+	app      *app.App
 	access   *authzfake.AccessService
 	srv      *grpc.Server
 	conn     *grpc.ClientConn
 	orgs     rmv1.OrganizationServiceClient
 	projects rmv1.ProjectServiceClient
 	internal rminternalv1.OrganizationServiceClient
+	quotas   rminternalv1.QuotaServiceClient
 }
 
 // authenticate stands in for token verification: x-test-subject → Subject.
@@ -102,7 +105,7 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	ops := operation.New(pool, clk, gen, operation.WithCreateHook(auditor.OperationCreated))
-	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk, QuotaDefaults: domain.DefaultQuotas})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +117,7 @@ func newEnv(t *testing.T) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	e := &env{pool: pool, access: authzfake.New()}
+	e := &env{pool: pool, app: a, access: authzfake.New()}
 	e.srv, err = api.NewServer(api.Options{
 		App: a, Authorizer: e.access, Authenticate: authenticate, Auditor: auditor, Operations: ops,
 		Pages: pages, Validator: v, Logger: logger, Health: health.NewServer(),
@@ -125,7 +128,9 @@ func newEnv(t *testing.T) *env {
 	e.conn = serve(t, e.srv)
 	e.orgs = rmv1.NewOrganizationServiceClient(e.conn)
 	e.projects = rmv1.NewProjectServiceClient(e.conn)
-	e.internal = rminternalv1.NewOrganizationServiceClient(serve(t, api.NewInternalServer(a, v, logger)))
+	internal := serve(t, api.NewInternalServer(a, v, logger))
+	e.internal = rminternalv1.NewOrganizationServiceClient(internal)
+	e.quotas = rminternalv1.NewQuotaServiceClient(internal)
 	return e
 }
 

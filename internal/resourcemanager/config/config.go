@@ -8,10 +8,12 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/mindevis/qstack/internal/resourcemanager/domain"
 	"github.com/mindevis/qstack/pkg/config"
 	"github.com/mindevis/qstack/pkg/db"
 )
@@ -45,6 +47,16 @@ type API struct {
 	// Migrate applies the database migrations on start (single replica,
 	// L0); otherwise a migration job does (T-1.67).
 	Migrate bool `yaml:"migrate" env:"QS_MIGRATE"`
+	// QuotaDefaults change the platform limits of every project
+	// (domain.DefaultQuotas) per metric.
+	QuotaDefaults map[string]int64 `yaml:"quota_defaults"`
+}
+
+// Quotas returns the effective default limits.
+func (c *API) Quotas() map[string]int64 {
+	out := maps.Clone(domain.DefaultQuotas)
+	maps.Copy(out, c.QuotaDefaults)
+	return out
 }
 
 // DefaultAPI returns the defaults of the API binary.
@@ -70,6 +82,11 @@ func (c *API) Validate() error {
 	if len(c.PageTokenKeyFiles) == 0 {
 		errs = append(errs, errors.New("page_token_key_files is required"))
 	}
+	for m, l := range c.QuotaDefaults {
+		if l < 0 {
+			errs = append(errs, fmt.Errorf("quota_defaults.%s must not be negative", m))
+		}
+	}
 	return errors.Join(errs...)
 }
 
@@ -81,6 +98,9 @@ type Controller struct {
 	NATSURL string `yaml:"nats_url" env:"QS_NATS_URL"`
 	// StreamReplicas is 3 in the ha profile, 1 in single.
 	StreamReplicas int `yaml:"stream_replicas" env:"QS_STREAM_REPLICAS"`
+	// UsageRegions are the regions whose usage snapshots reconcile quota
+	// usage (REQ-RM-002); their usage streams must reach this NATS.
+	UsageRegions []string `yaml:"usage_regions"`
 }
 
 // DefaultController returns the defaults of the controller binary.

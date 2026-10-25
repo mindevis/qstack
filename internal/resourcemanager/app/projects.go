@@ -96,8 +96,7 @@ func (a *App) UpdateProject(ctx context.Context, subject, id, etag string, ch do
 	return op, apiError(err, "project", id)
 }
 
-// DeleteProject deletes a project and its access bindings. Whether the
-// project is empty is checked with quota usage in T-1.3.
+// DeleteProject deletes an empty project and its access bindings.
 func (a *App) DeleteProject(ctx context.Context, subject, id, etag string) (*operationv1.Operation, error) {
 	op, err := a.change(ctx, operation.Spec{
 		ProjectID: id, ResourceID: id, Description: "Delete project", CreatedBy: subject,
@@ -109,6 +108,15 @@ func (a *App) DeleteProject(ctx context.Context, subject, id, etag string) (*ope
 		}
 		if err := domain.CheckEtag(p.ID, p.Version, etag); err != nil {
 			return nil, err
+		}
+		// Spec 03 §2: only empty projects are deleted. Usage and active
+		// reservations count; Reserve shares the project row lock.
+		inUse, err := s.ProjectInUse(ctx, p.ID, a.now())
+		if err != nil {
+			return nil, err
+		}
+		if inUse {
+			return nil, apierr.ResourceInUse(p.ID, "resources")
 		}
 		before := ProjectProto(p)
 		prev := p.Version

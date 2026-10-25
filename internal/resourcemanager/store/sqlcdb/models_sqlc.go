@@ -47,3 +47,33 @@ type Project struct {
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time
 }
+
+type QuotaLimit struct {
+	ProjectID string
+	Metric    string
+	Limit     int64
+	UpdatedAt time.Time
+}
+
+type QuotaReservation struct {
+	OperationID string
+	ProjectID   string
+	State       string
+	ExpireAt    time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type QuotaReservationDelta struct {
+	OperationID string
+	ProjectID   string
+	Metric      string
+	Amount      int64
+}
+
+type QuotaUsage struct {
+	ProjectID string
+	Metric    string
+	Used      int64
+	UpdatedAt time.Time
+}

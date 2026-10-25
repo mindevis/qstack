@@ -1,6 +1,7 @@
 // Command qs-resource-manager-controller runs the background work of
-// Resource Manager: it publishes outbox events to NATS JetStream and purges
-// finished operations (spec 02 §5.3, §8).
+// Resource Manager: it publishes outbox events to NATS JetStream,
+// reconciles quota usage with usage snapshots and purges finished
+// operations and reservations (spec 02 §5.3, §8; 03 §5).
 package main
 
 import (
@@ -25,6 +26,7 @@ import (
 	"github.com/mindevis/qstack/pkg/ids"
 	"github.com/mindevis/qstack/pkg/operation"
 	"github.com/mindevis/qstack/pkg/outbox"
+	"github.com/mindevis/qstack/pkg/quota"
 	"github.com/mindevis/qstack/pkg/telemetry"
 	"github.com/mindevis/qstack/pkg/version"
 )
@@ -81,11 +83,39 @@ func run(cfgPath string) error {
 	reg := telemetry.NewRegistry()
 	reg.MustRegister(db.NewPoolCollector(pool))
 	clk := clock.Real()
+	gen := ids.NewGenerator(clk, rand.Reader)
 	relay, err := outbox.NewRelay(outbox.RelayConfig{
 		Pool: pool, Publisher: events.JetStreamPublisher(js), Clock: clk, Logger: logger, Metrics: outbox.NewMetrics(reg),
 	})
 	if err != nil {
 		return err
+	}
+	ow, err := outbox.NewWriter(app.Source, clk, gen)
+	if err != nil {
+		return err
+	}
+	ops := operation.New(pool, clk, gen)
+	a, err := app.New(app.Config{Pool: pool, Operations: ops, Outbox: ow, IDs: gen, Clock: clk})
+	if err != nil {
+		return err
+	}
+	handler := controller.SnapshotHandler(a, controller.NewMetrics(reg))
+	consumerMetrics := events.NewConsumerMetrics(reg)
+	var consumers []*events.Consumer
+	for _, region := range cfg.UsageRegions {
+		us := quota.UsageStream(region)
+		us.Replicas = cfg.StreamReplicas
+		if err := events.EnsureStream(ctx, js, us); err != nil {
+			return err
+		}
+		c, err := events.NewConsumer(ctx, js, events.ConsumerConfig{
+			Name: controller.SnapshotConsumer, Stream: us.Name, FilterSubjects: []string{quota.SnapshotSubject(region, "*")},
+			Pool: pool, Handler: handler, Clock: clk, Logger: logger, Metrics: consumerMetrics,
+		})
+		if err != nil {
+			return err
+		}
+		consumers = append(consumers, c)
 	}
 	ready := telemetry.NewHealth(2 * time.Second)
 	ready.AddCheck("db", db.Check(pool))
@@ -100,7 +130,7 @@ func run(cfgPath string) error {
 	go func() { errc <- admin.ListenAndServe() }()
 	go func() {
 		errc <- controller.Run(ctx, controller.Config{
-			Relay: relay, Operations: operation.New(pool, clk, ids.NewGenerator(clk, rand.Reader)), Logger: logger,
+			Relay: relay, Operations: ops, App: a, Pool: pool, Consumers: consumers, Clock: clk, Logger: logger,
 		})
 	}()
 	logger.InfoContext(ctx, "started", "version", version.Version, "admin_addr", cfg.AdminAddr)
